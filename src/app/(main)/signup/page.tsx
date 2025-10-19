@@ -69,18 +69,20 @@ export default function SignupPage() {
               <Input id="city" placeholder="New York" required />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="age">Age</Label>
-              <Input id="age" type="number" placeholder="30" required />
-            </div>
-            {userType === 'worker' && (
+
+          {userType === 'worker' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="age">Age</Label>
+                <Input id="age" type="number" placeholder="30" required />
+              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="experience">Years of Experience</Label>
                 <Input id="experience" type="number" placeholder="5" required />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {userType === 'worker' && (
             <div className="grid gap-2">
