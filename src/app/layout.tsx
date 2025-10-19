@@ -22,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
-      <body className={`${ptSans.variable} font-body antialiased bg-background h-full`}>
+      <body
+        className={`${ptSans.variable} font-body antialiased bg-background h-full`}
+        suppressHydrationWarning
+      >
         {children}
         <Toaster />
       </body>
