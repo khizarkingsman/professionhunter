@@ -21,9 +21,12 @@ import {
 } from '@/components/ui/select';
 import {professions} from '@/lib/data';
 import Link from 'next/link';
+import {Eye, EyeOff} from 'lucide-react';
 
 export default function SignupPage() {
   const [userType, setUserType] = useState('seeker');
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] py-12 bg-background px-4">
@@ -97,9 +100,24 @@ export default function SignupPage() {
             </div>
           )}
 
-          <div className="grid gap-2">
+          <div className="grid gap-2 relative">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+              onClick={togglePasswordVisibility}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <span className="sr-only">Toggle password visibility</span>
+            </Button>
           </div>
 
           <Button type="submit" className="w-full mt-4">

@@ -1,3 +1,6 @@
+'use client';
+
+import {useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {
   Card,
@@ -10,8 +13,12 @@ import {
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import Link from 'next/link';
+import {Eye, EyeOff} from 'lucide-react';
 
 export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
   return (
     <div className="flex min-h-[80vh] items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
@@ -24,9 +31,24 @@ export default function LoginPage() {
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="m@example.com" required />
           </div>
-          <div className="grid gap-2">
+          <div className="grid gap-2 relative">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+              onClick={togglePasswordVisibility}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <span className="sr-only">Toggle password visibility</span>
+            </Button>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-4">
