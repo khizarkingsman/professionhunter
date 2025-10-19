@@ -1,10 +1,12 @@
 'use client';
 
+import React from 'react';
 import {chats, users, currentUserSeeker} from '@/lib/data';
 import type {User} from '@/lib/data';
 import ChatLayout from '@/components/chat/chat-layout';
 
-export default function ChatPage({params}: {params: {userId: string}}) {
+export default function ChatPage({params: paramsPromise}: {params: Promise<{userId: string}>}) {
+  const params = React.use(paramsPromise);
   const otherUserId = params.userId;
   const otherUser = users.find(u => u.id === otherUserId);
   const loggedInUser = currentUserSeeker; // In a real app, this would come from auth context
@@ -27,8 +29,12 @@ export default function ChatPage({params}: {params: {userId: string}}) {
   }
 
   const worker =
-    otherUser.role === 'worker' ? otherUser : loggedInUser.role === 'worker' ? loggedInUser : undefined;
-  
+    otherUser.role === 'worker'
+      ? otherUser
+      : loggedInUser.role === 'worker'
+      ? loggedInUser
+      : undefined;
+
   if (!worker || !worker.profession) {
     return <div className="text-center py-20">Could not identify a worker in this chat.</div>;
   }
