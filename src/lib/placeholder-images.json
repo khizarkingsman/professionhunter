@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "worker1",
+      "description": "Portrait of a friendly plumber",
+      "imageUrl": "https://images.unsplash.com/photo-1726931535180-d27a2ffd7474?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwbHVtYmVyJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzYwODYwMTczfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plumber portrait"
+    },
+    {
+      "id": "worker2",
+      "description": "Portrait of a female electrician",
+      "imageUrl": "https://images.unsplash.com/photo-1581090604093-b89d92ae3bc0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGVsZWN0cmljaWFufGVufDB8fHx8MTc2MDkxMjkyNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman electrician"
+    },
+    {
+      "id": "worker3",
+      "description": "Portrait of a carpenter in his workshop",
+      "imageUrl": "https://images.unsplash.com/photo-1678184098239-b3da6fe24acd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjYXJwZW50ZXIlMjB3b3Jrc2hvcHxlbnwwfHx8fDE3NjA5MTI5MjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "carpenter workshop"
+    },
+    {
+      "id": "worker4",
+      "description": "Portrait of a painter with a colorful background",
+      "imageUrl": "https://images.unsplash.com/photo-1553771376-f4925b8c3b07?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwYWludGVyJTIwY29sb3JmdWx8ZW58MHx8fHwxNzYwOTEyOTI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "painter colorful"
+    },
+    {
+      "id": "seeker1",
+      "description": "Portrait of a person looking for services",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjA4MjUzNjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "seeker2",
+      "description": "Portrait of a happy customer",
+      "imageUrl": "https://images.unsplash.com/photo-1508002366005-75a695ee2d17?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxoYXBweSUyMHBlcnNvbnxlbnwwfHx8fDE3NjA4MzU0OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "happy person"
+    }
+  ]
 }

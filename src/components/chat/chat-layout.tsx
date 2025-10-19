@@ -1,0 +1,100 @@
+'use client';
+
+import {useState} from 'react';
+import type {Chat, User, ChatMessage} from '@/lib/data';
+import {suggestHelpfulArticles} from '@/ai/flows/suggest-helpful-articles-in-chat';
+import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import ChatMessages from './chat-messages';
+import ChatInput from './chat-input';
+import Link from 'next/link';
+import {ChevronLeft} from 'lucide-react';
+import {Button} from '../ui/button';
+
+interface ChatLayoutProps {
+  chat: Chat;
+  currentUser: User;
+  otherUser: User;
+  workerProfession: string;
+}
+
+export default function ChatLayout({
+  chat: initialChat,
+  currentUser,
+  otherUser,
+  workerProfession,
+}: ChatLayoutProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+
+  const handleSendMessage = (text: string) => {
+    const newMessage: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      senderId: currentUser.id,
+      text,
+      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const handleGetSuggestion = async () => {
+    setIsLoadingSuggestion(true);
+    const chatHistory = messages
+      .map(m => {
+        const senderName = m.senderId === currentUser.id ? currentUser.name : otherUser.name;
+        return `${senderName}: ${m.text}`;
+      })
+      .join('\n');
+
+    try {
+      const result = await suggestHelpfulArticles({
+        chatHistory,
+        userProfession: workerProfession,
+      });
+
+      if (result.suggestedArticleSnippet) {
+        const aiMessage: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          senderId: 'ai',
+          text: result.suggestedArticleSnippet,
+          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
+          isAiSuggestion: true,
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      }
+    } catch (error) {
+      console.error('Error getting AI suggestion:', error);
+    } finally {
+      setIsLoadingSuggestion(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full w-full bg-background">
+      <div className="flex items-center p-2 md:p-4 border-b">
+        <Button variant="ghost" size="icon" className="mr-2" asChild>
+          <Link
+            href={currentUser.role === 'worker' ? '/dashboard-worker' : `/profile/${otherUser.id}`}
+          >
+            <ChevronLeft />
+          </Link>
+        </Button>
+        <Avatar className="mr-4">
+          <AvatarImage src={otherUser.avatarUrl} alt={otherUser.name} />
+          <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <p className="font-semibold">{otherUser.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {otherUser.role === 'worker' ? otherUser.profession : 'Service Seeker'}
+          </p>
+        </div>
+      </div>
+      <ChatMessages messages={messages} currentUser={currentUser} otherUser={otherUser} />
+      <ChatInput
+        onSendMessage={handleSendMessage}
+        onGetSuggestion={handleGetSuggestion}
+        isLoadingSuggestion={isLoadingSuggestion}
+      />
+    </div>
+  );
+}
