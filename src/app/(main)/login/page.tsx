@@ -87,7 +87,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-4">
           <Button className="w-full" onClick={handleLogin}>
-            Sign in
+            Log in
           </Button>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
