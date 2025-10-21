@@ -31,14 +31,24 @@ export function AuthProvider({children}: {children: ReactNode}) {
   const [users, setUsers] = useState<User[]>(mockUsers);
 
   useEffect(() => {
+    // This effect runs only on the client, after hydration.
     try {
       const storedUser = localStorage.getItem('handy-connect-user');
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
       const storedUsers = localStorage.getItem('handy-connect-all-users');
-      if(storedUsers) {
-        setUsers(JSON.parse(storedUsers));
+      if (storedUsers) {
+        const allUsers = JSON.parse(storedUsers);
+        setUsers(allUsers);
+        // Also update the in-memory password store for newly signed up users
+        allUsers.forEach((u: User) => {
+            if(u.email && !passwordStore[u.email.toLowerCase()]){
+                // This is a placeholder for signup-created passwords.
+                // In a real app this would be handled securely.
+                passwordStore[u.email.toLowerCase()] = 'password123';
+            }
+        });
       } else {
         localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
       }
@@ -66,6 +76,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('handy-connect-user');
+    // For simplicity, we don't clear the all-users list on logout
   };
 
   const signup = (newUser: User, password: string): User | null => {
@@ -77,6 +88,8 @@ export function AuthProvider({children}: {children: ReactNode}) {
     const newUsers = [...users, newUser];
     setUsers(newUsers);
     localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+    
+    // Store password for the new user for the current session
     // @ts-ignore
     passwordStore[newUser.email.toLowerCase()] = password;
 
