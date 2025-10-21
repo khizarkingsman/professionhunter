@@ -61,11 +61,8 @@ export default function Dashboard() {
   const localWorkers = workers.filter(worker => worker.city === user.city);
 
   const filteredWorkers = localWorkers.filter(worker => {
-    const matchesSearch =
-      worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.bio?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProfession = selectedProfession === 'all' || worker.profession === selectedProfession;
-    return matchesSearch && matchesProfession;
+    return matchesProfession;
   });
 
   return (
