@@ -21,9 +21,6 @@ export default function Home() {
               <Button asChild size="lg">
                 <Link href="/dashboard">Find a Service</Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/signup">register here</Link>
-              </Button>
             </div>
           </div>
         </div>
