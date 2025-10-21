@@ -1,5 +1,6 @@
+'use client';
+
 import {
-  currentUserWorker,
   users,
   chats as allChats,
   reviews as allReviews,
@@ -19,9 +20,25 @@ import {Star, MessageSquare, User, Briefcase, CalendarDays} from 'lucide-react';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
+import {useAuth} from '@/context/auth-context';
+import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
 
 export default function WorkerDashboardPage() {
-  const worker = currentUserWorker;
+  const {user: worker, loading} = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !worker) {
+      router.push('/login');
+    }
+  }, [worker, loading, router]);
+
+
+  if (loading || !worker || worker.role !== 'worker') {
+    return <div className="container text-center py-20">Loading or not authorized...</div>;
+  }
+
   const workerReviews = allReviews.filter(r => r.workerId === worker.id);
   const workerChats = allChats.filter(c => c.participants.includes(worker.id));
 

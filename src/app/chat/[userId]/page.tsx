@@ -1,15 +1,34 @@
 'use client';
 
 import React from 'react';
-import {chats, users, currentUserSeeker} from '@/lib/data';
+import {chats, users} from '@/lib/data';
 import type {User} from '@/lib/data';
 import ChatLayout from '@/components/chat/chat-layout';
+import {useAuth} from '@/context/auth-context';
+import {useRouter} from 'next/navigation';
 
 export default function ChatPage({params: paramsPromise}: {params: Promise<{userId: string}>}) {
   const params = React.use(paramsPromise);
+  const {user: loggedInUser, loading} = useAuth();
+  const router = useRouter();
   const otherUserId = params.userId;
+  
+  React.useEffect(() => {
+    if (!loading && !loggedInUser) {
+      router.push('/login');
+    }
+  }, [loggedInUser, loading, router]);
+
+
+  if (loading || !loggedInUser) {
+     return <div className="text-center py-20">Loading...</div>;
+  }
+
   const otherUser = users.find(u => u.id === otherUserId);
-  const loggedInUser = currentUserSeeker; // In a real app, this would come from auth context
+
+  if (!otherUser) {
+    return <div className="text-center py-20">User not found.</div>;
+  }
 
   // Find chat or create a new one for demonstration
   let chat = chats.find(
@@ -24,9 +43,6 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
     };
   }
 
-  if (!otherUser) {
-    return <div className="text-center py-20">User not found.</div>;
-  }
 
   const worker =
     otherUser.role === 'worker'

@@ -9,6 +9,7 @@ import ChatInput from './chat-input';
 import Link from 'next/link';
 import {ChevronLeft} from 'lucide-react';
 import {Button} from '../ui/button';
+import { useAuth } from '@/context/auth-context';
 
 interface ChatLayoutProps {
   chat: Chat;
@@ -25,6 +26,7 @@ export default function ChatLayout({
 }: ChatLayoutProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const {user} = useAuth();
 
   const handleSendMessage = (text: string) => {
     const newMessage: ChatMessage = {
@@ -68,13 +70,24 @@ export default function ChatLayout({
     }
   };
 
+  const getBackLink = () => {
+    if (!user) return '/';
+    if (user.role === 'worker') {
+      return '/dashboard-worker';
+    }
+    // If the current user is a seeker, the "back" link should go to the other user's (the worker's) profile
+    if (otherUser.role === 'worker') {
+       return `/profile/${otherUser.id}`;
+    }
+    // Fallback for seeker-seeker chat or other edge cases
+    return '/dashboard';
+  }
+
   return (
     <div className="flex flex-col h-full w-full bg-background">
       <div className="flex items-center p-2 md:p-4 border-b">
         <Button variant="ghost" size="icon" className="mr-2" asChild>
-          <Link
-            href={currentUser.role === 'worker' ? '/dashboard-worker' : `/profile/${otherUser.id}`}
-          >
+          <Link href={getBackLink()}>
             <ChevronLeft />
           </Link>
         </Button>

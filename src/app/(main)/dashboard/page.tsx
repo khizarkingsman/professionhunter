@@ -1,7 +1,7 @@
 'use client';
 
-import {useState} from 'react';
-import {users, professions, currentUserSeeker} from '@/lib/data';
+import {useState, useEffect} from 'react';
+import {users, professions} from '@/lib/data';
 import type {User} from '@/lib/data';
 import {Input} from '@/components/ui/input';
 import {
@@ -12,15 +12,34 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {WorkerCard} from '@/components/worker-card';
+import {useAuth} from '@/context/auth-context';
+import {useRouter} from 'next/navigation';
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProfession, setSelectedProfession] = useState('all');
+  const {user} = useAuth();
+  const router = useRouter();
 
-  const workers = users.filter((user): user is User & {role: 'worker'} => user.role === 'worker');
+  useEffect(() => {
+    if (user === null) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
+
+  if (!user || user.role !== 'seeker') {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading or unauthorized...</p>
+      </div>
+    );
+  }
+
+  const workers = users.filter((u): u is User & {role: 'worker'} => u.role === 'worker');
 
   // Location based matching
-  const localWorkers = workers.filter(worker => worker.city === currentUserSeeker.city);
+  const localWorkers = workers.filter(worker => worker.city === user.city);
 
   const filteredWorkers = localWorkers.filter(worker => {
     const matchesSearch =
@@ -34,7 +53,7 @@ export default function Dashboard() {
     <div className="container mx-auto py-8 px-4 md:px-6">
       <div className="space-y-4 mb-8">
         <h1 className="text-3xl font-bold font-headline">
-          Find a Professional in {currentUserSeeker.city}
+          Find a Professional in {user.city}
         </h1>
         <p className="text-muted-foreground">Browse our list of trusted local workers.</p>
         <div className="flex flex-col md:flex-row gap-4">

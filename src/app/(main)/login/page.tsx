@@ -14,10 +14,35 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import Link from 'next/link';
 import {Eye, EyeOff} from 'lucide-react';
+import {useAuth} from '@/context/auth-context';
+import {useRouter} from 'next/navigation';
+import {useToast} from '@/hooks/use-toast';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const {login} = useAuth();
+  const router = useRouter();
+  const {toast} = useToast();
+
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  const handleLogin = () => {
+    const loggedInUser = login(email, password);
+    if (loggedInUser) {
+      toast({title: 'Login Successful', description: `Welcome back, ${loggedInUser.name}!`});
+      const targetDashboard =
+        loggedInUser.role === 'worker' ? '/dashboard-worker' : '/dashboard';
+      router.push(targetDashboard);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Invalid email or password.',
+      });
+    }
+  };
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center bg-background px-4">
@@ -29,7 +54,14 @@ export default function LoginPage() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
           </div>
           <div className="grid gap-2 relative">
             <Label htmlFor="password">Password</Label>
@@ -38,6 +70,8 @@ export default function LoginPage() {
               type={showPassword ? 'text' : 'password'}
               required
               className="pr-10"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
             />
             <Button
               type="button"
@@ -52,11 +86,8 @@ export default function LoginPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-4">
-          <Button className="w-full" asChild>
-            <Link href="/dashboard">Sign in as Seeker</Link>
-          </Button>
-          <Button className="w-full" variant="secondary" asChild>
-            <Link href="/dashboard-worker">Sign in as Worker</Link>
+          <Button className="w-full" onClick={handleLogin}>
+            Sign in
           </Button>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
