@@ -1,4 +1,4 @@
-import {Wrench, Zap, Hammer, Paintbrush, Sparkles, Sprout, PenTool} from 'lucide-react';
+import {Wrench, Zap, Hammer, Paintbrush, Sparkles, Sprout} from 'lucide-react';
 import type {LucideIcon} from 'lucide-react';
 
 export type Profession = {
@@ -14,7 +14,6 @@ export const professions: Profession[] = [
   {name: 'Painter', description: 'Interior and exterior painting services.', icon: Paintbrush},
   {name: 'Cleaner', description: 'Home and office cleaning services.', icon: Sparkles},
   {name: 'Landscaper', description: 'Gardening, lawn care, and design.', icon: Sprout},
-  {name: 'Graphic Designer', description: 'Logos, branding, and web design.', icon: PenTool},
 ];
 
 export type User = {
@@ -119,21 +118,6 @@ export const users: User[] = [
     experience: 8,
     bio: 'Professional painter dedicated to transforming spaces with color. I offer interior and exterior painting services with a meticulous eye for detail.',
     avgRating: 5.0,
-  },
-  {
-    id: 'worker-5',
-    name: 'Alex Designs',
-    role: 'worker',
-    email: 'alex.d@example.com',
-    country: 'USA',
-    city: 'New York',
-    age: 28,
-    phone: '+12345678905',
-    avatarUrl: 'https://picsum.photos/seed/worker5/400/400',
-    profession: 'Graphic Designer',
-    experience: 5,
-    bio: 'Creative graphic designer specializing in branding and digital media. I bring ideas to life with stunning visuals and a modern aesthetic.',
-    avgRating: 4.9,
   },
   {
     id: 'seeker-1',
