@@ -2,7 +2,7 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {users, professions} from '@/lib/data';
+import {professions} from '@/lib/data';
 import type {User} from '@/lib/data';
 import {Input} from '@/components/ui/input';
 import {
@@ -19,15 +19,26 @@ import {useRouter, useSearchParams} from 'next/navigation';
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProfession, setSelectedProfession] = useState('all');
-  const {user} = useAuth();
+  const {user, loading} = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+
   useEffect(() => {
-    if (user === null) {
+    // In a real app, you would fetch users, but here we get them from localStorage
+    // to include newly registered users.
+    const storedUsers = localStorage.getItem('handy-connect-all-users');
+    if (storedUsers) {
+      setAllUsers(JSON.parse(storedUsers));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loading && user === null) {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   useEffect(() => {
     const professionFromUrl = searchParams.get('profession');
@@ -36,7 +47,7 @@ export default function Dashboard() {
     }
   }, [searchParams]);
 
-  if (!user || user.role !== 'seeker') {
+  if (loading || !user || user.role !== 'seeker') {
     return (
       <div className="flex justify-center items-center h-screen">
         <p>Loading or unauthorized...</p>
@@ -44,7 +55,7 @@ export default function Dashboard() {
     );
   }
 
-  const workers = users.filter((u): u is User & {role: 'worker'} => u.role === 'worker');
+  const workers = allUsers.filter((u): u is User & {role: 'worker'} => u.role === 'worker');
 
   // Location based matching
   const localWorkers = workers.filter(worker => worker.city === user.city);

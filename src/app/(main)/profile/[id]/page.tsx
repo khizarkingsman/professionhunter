@@ -1,12 +1,17 @@
+
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import {users, reviews as allReviews} from '@/lib/data';
+import {users as mockUsers, reviews as allReviews} from '@/lib/data';
+import type {User} from '@/lib/data';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
 import {Star, MessageCircle, Info, CalendarDays, MapPin, Mail, Phone} from 'lucide-react';
 import ReviewForm from '@/components/review-form';
+import { useEffect, useState } from 'react';
 
 function StarRating({rating, className}: {rating: number; className?: string}) {
   return (
@@ -26,6 +31,17 @@ function StarRating({rating, className}: {rating: number; className?: string}) {
 }
 
 export default function WorkerProfilePage({params}: {params: {id: string}}) {
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const storedUsers = localStorage.getItem('handy-connect-all-users');
+    if (storedUsers) {
+      setUsers(JSON.parse(storedUsers));
+    } else {
+      setUsers(mockUsers);
+    }
+  }, []);
+
   const worker = users.find(u => u.id === params.id && u.role === 'worker');
   const workerReviews = allReviews.filter(r => r.workerId === params.id);
 

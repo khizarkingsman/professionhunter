@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import {chats, users} from '@/lib/data';
+import {chats as mockChats, users as mockUsers} from '@/lib/data';
 import type {User} from '@/lib/data';
 import ChatLayout from '@/components/chat/chat-layout';
 import {useAuth} from '@/context/auth-context';
@@ -13,6 +13,22 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
   const router = useRouter();
   const otherUserId = params.userId;
   
+  const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  const [allChats, setAllChats] = React.useState<typeof mockChats>([]);
+
+  React.useEffect(() => {
+    // In a real app, this data would be fetched, but here we use localStorage
+    // to ensure newly created users are available.
+    const storedUsers = localStorage.getItem('handy-connect-all-users');
+    if (storedUsers) {
+      setAllUsers(JSON.parse(storedUsers));
+    } else {
+      setAllUsers(mockUsers);
+    }
+    // For now, chats are not persisted, so we use the initial mock data.
+    setAllChats(mockChats);
+  }, []);
+
   React.useEffect(() => {
     if (!loading && !loggedInUser) {
       router.push('/login');
@@ -20,18 +36,18 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
   }, [loggedInUser, loading, router]);
 
 
-  if (loading || !loggedInUser) {
+  if (loading || !loggedInUser || allUsers.length === 0) {
      return <div className="text-center py-20">Loading...</div>;
   }
 
-  const otherUser = users.find(u => u.id === otherUserId);
+  const otherUser = allUsers.find(u => u.id === otherUserId);
 
   if (!otherUser) {
     return <div className="text-center py-20">User not found.</div>;
   }
 
   // Find chat or create a new one for demonstration
-  let chat = chats.find(
+  let chat = allChats.find(
     c => c.participants.includes(loggedInUser.id) && c.participants.includes(otherUserId)
   );
 

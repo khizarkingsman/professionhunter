@@ -5,7 +5,7 @@ import {users as mockUsers, User} from '@/lib/data';
 
 // This is a simple in-memory store for passwords.
 // In a real app, you would never store passwords in plaintext.
-const passwordStore: Record<string, string> = {
+const initialPasswordStore: Record<string, string> = {
   'john.d@example.com': 'password123',
   'jane.s@example.com': 'password123',
   'mike.j@example.com': 'password123',
@@ -27,18 +27,38 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({children}: {children: ReactNode}) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [passwordStore, setPasswordStore] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Try to load user from localStorage on initial load
     try {
       const storedUser = localStorage.getItem('handy-connect-user');
+      const storedUsers = localStorage.getItem('handy-connect-all-users');
+      const storedPasswords = localStorage.getItem('handy-connect-passwords');
+
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
+
+      if (storedUsers) {
+        setUsers(JSON.parse(storedUsers));
+      } else {
+        setUsers(mockUsers);
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
+      }
+
+      if (storedPasswords) {
+        setPasswordStore(JSON.parse(storedPasswords));
+      } else {
+        setPasswordStore(initialPasswordStore);
+        localStorage.setItem('handy-connect-passwords', JSON.stringify(initialPasswordStore));
+      }
     } catch (error) {
-      console.error('Failed to parse user from localStorage', error);
+      console.error('Failed to parse data from localStorage', error);
+      // Reset to defaults if parsing fails
       localStorage.removeItem('handy-connect-user');
+      localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
+      localStorage.setItem('handy-connect-passwords', JSON.stringify(initialPasswordStore));
     } finally {
       setLoading(false);
     }
@@ -69,9 +89,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
       return null; // User already exists
     }
 
-    // Add new user to our mock data
-    setUsers(prevUsers => [...prevUsers, newUser]);
-    passwordStore[newUser.email.toLowerCase()] = password;
+    // Add new user to our mock data and persist it
+    const newUsers = [...users, newUser];
+    const newPasswords = {...passwordStore, [newUser.email.toLowerCase()]: password};
+
+    setUsers(newUsers);
+    setPasswordStore(newPasswords);
+    localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+    localStorage.setItem('handy-connect-passwords', JSON.stringify(newPasswords));
 
     // Log the new user in
     setUser(newUser);

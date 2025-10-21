@@ -1,10 +1,11 @@
 'use client';
 
 import {
-  users,
-  chats as allChats,
+  chats as mockChats,
   reviews as allReviews,
+  users as mockUsers,
 } from '@/lib/data';
+import type { User } from '@/lib/data';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   Card,
@@ -16,17 +17,30 @@ import {
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
-import {Star, MessageSquare, User, Briefcase, CalendarDays} from 'lucide-react';
+import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays} from 'lucide-react';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
 import {useAuth} from '@/context/auth-context';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 
 export default function WorkerDashboardPage() {
   const {user: worker, loading} = useAuth();
   const router = useRouter();
+
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    // In a real app, you would fetch users, but here we get them from localStorage
+    // to include newly registered users.
+    const storedUsers = localStorage.getItem('handy-connect-all-users');
+    if (storedUsers) {
+      setAllUsers(JSON.parse(storedUsers));
+    } else {
+        setAllUsers(mockUsers);
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !worker) {
@@ -40,7 +54,7 @@ export default function WorkerDashboardPage() {
   }
 
   const workerReviews = allReviews.filter(r => r.workerId === worker.id);
-  const workerChats = allChats.filter(c => c.participants.includes(worker.id));
+  const workerChats = mockChats.filter(c => c.participants.includes(worker.id));
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
@@ -58,7 +72,7 @@ export default function WorkerDashboardPage() {
       <Tabs defaultValue="profile">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">
-            <User className="mr-2 h-4 w-4" />
+            <UserIcon className="mr-2 h-4 w-4" />
             Profile
           </TabsTrigger>
           <TabsTrigger value="reviews">
@@ -101,7 +115,7 @@ export default function WorkerDashboardPage() {
                   {worker.experience} years
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="text-primary" /> <strong>Age:</strong> {worker.age}
+                  <UserIcon className="text-primary" /> <strong>Age:</strong> {worker.age}
                 </div>
               </div>
             </CardContent>
@@ -171,7 +185,7 @@ export default function WorkerDashboardPage() {
               <div className="space-y-1">
                 {workerChats.map(chat => {
                   const otherUserId = chat.participants.find(p => p !== worker.id);
-                  const otherUser = users.find(u => u.id === otherUserId);
+                  const otherUser = allUsers.find(u => u.id === otherUserId);
                   const lastMessage = chat.messages[chat.messages.length - 1];
                   if (!otherUser) return null;
 
