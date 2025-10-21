@@ -42,13 +42,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
       }
       const storedUsers = localStorage.getItem('handy-connect-all-users');
       if (storedUsers) {
-        const allUsers = JSON.parse(storedUsers);
+        const allUsers: User[] = JSON.parse(storedUsers);
         setUsers(allUsers);
         // Also update the in-memory password store for newly signed up users
         allUsers.forEach((u: User) => {
           if (u.email && !passwordStore[u.email.toLowerCase()]) {
             // This is a placeholder for signup-created passwords.
-            // In a real app this would be handled securely.
+            // In a real app this would be handled securely, but for this demo
+            // we'll use a default password.
             passwordStore[u.email.toLowerCase()] = 'password123';
           }
         });
