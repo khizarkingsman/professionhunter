@@ -1,3 +1,4 @@
+
 'use client';
 
 import {useState, useEffect} from 'react';
@@ -13,13 +14,14 @@ import {
 } from '@/components/ui/select';
 import {WorkerCard} from '@/components/worker-card';
 import {useAuth} from '@/context/auth-context';
-import {useRouter} from 'next/navigation';
+import {useRouter, useSearchParams} from 'next/navigation';
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProfession, setSelectedProfession] = useState('all');
   const {user} = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (user === null) {
@@ -27,6 +29,12 @@ export default function Dashboard() {
     }
   }, [user, router]);
 
+  useEffect(() => {
+    const professionFromUrl = searchParams.get('profession');
+    if (professionFromUrl) {
+      setSelectedProfession(professionFromUrl);
+    }
+  }, [searchParams]);
 
   if (!user || user.role !== 'seeker') {
     return (

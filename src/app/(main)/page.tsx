@@ -92,18 +92,21 @@ export default function Home() {
             {professions.map(profession => {
               const Icon = profession.icon;
               return (
-                <Card
+                <Link
                   key={profession.name}
-                  className="flex flex-col items-center justify-center p-6 text-center hover:shadow-xl transition-shadow duration-300"
+                  href={`/dashboard?profession=${encodeURIComponent(profession.name)}`}
+                  className="group"
                 >
-                  <CardHeader>
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                      <Icon className="h-8 w-8" />
-                    </div>
-                    <CardTitle className="font-headline">{profession.name}</CardTitle>
-                  </CardHeader>
-                  <CardDescription>{profession.description}</CardDescription>
-                </Card>
+                  <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-shadow duration-300 group-hover:shadow-xl">
+                    <CardHeader>
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+                        <Icon className="h-8 w-8" />
+                      </div>
+                      <CardTitle className="font-headline">{profession.name}</CardTitle>
+                    </CardHeader>
+                    <CardDescription>{profession.description}</CardDescription>
+                  </Card>
+                </Link>
               );
             })}
           </div>
