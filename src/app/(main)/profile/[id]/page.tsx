@@ -108,10 +108,7 @@ export default function WorkerProfilePage({params}: {params: {id: string}}) {
               </div>
               <Separator />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <CalendarDays className="text-primary" /> <strong>Experience:</strong>{' '}
-                  {worker.experience} years
-                </div>
+
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="text-primary" /> <strong>Location:</strong> {worker.city},{' '}
                   {worker.country}

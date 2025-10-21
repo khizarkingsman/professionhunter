@@ -1,3 +1,4 @@
+
 'use client';
 
 import {useState} from 'react';
@@ -70,7 +71,7 @@ export default function SignupPage() {
 
     if (userType === 'worker') {
       newUser.age = parseInt(formData.age);
-      newUser.experience = parseInt(formData.experience);
+      newUser.experience = 0; // Defaulting experience
       newUser.profession = formData.profession;
       newUser.bio = 'Newly registered worker.';
       newUser.avgRating = 0;
@@ -182,31 +183,18 @@ export default function SignupPage() {
 
             {userType === 'worker' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="age">Age</Label>
-                    <Input
-                      id="age"
-                      type="number"
-                      placeholder="30"
-                      required
-                      value={formData.age}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="experience">Years of Experience</Label>
-                    <Input
-                      id="experience"
-                      type="number"
-                      placeholder="5"
-                      required
-                      value={formData.experience}
-                      onChange={handleChange}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    placeholder="30"
+                    required
+                    value={formData.age}
+                    onChange={handleChange}
+                  />
                 </div>
+                
                 <div className="grid gap-2">
                   <Label htmlFor="profession">Profession</Label>
                   <Select onValueChange={handleSelectChange} value={formData.profession}>

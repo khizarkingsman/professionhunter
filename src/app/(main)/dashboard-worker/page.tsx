@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -110,10 +111,7 @@ export default function WorkerDashboardPage() {
                 {worker.bio}
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm pt-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <CalendarDays className="text-primary" /> <strong>Experience:</strong>{' '}
-                  {worker.experience} years
-                </div>
+
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <UserIcon className="text-primary" /> <strong>Age:</strong> {worker.age}
                 </div>
