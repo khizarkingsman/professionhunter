@@ -10,6 +10,7 @@ const passwordStore: Record<string, string> = {
   'jane.s@example.com': 'password123',
   'mike.j@example.com': 'password123',
   'emily.w@example.com': 'password123',
+  'alex.d@example.com': 'password123',
   'alice.b@example.com': 'password123',
   'bob.g@example.com': 'password123',
 };
@@ -35,9 +36,16 @@ export function AuthProvider({children}: {children: ReactNode}) {
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
+      const storedUsers = localStorage.getItem('handy-connect-all-users');
+      if(storedUsers) {
+        setUsers(JSON.parse(storedUsers));
+      } else {
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
+      }
     } catch (error) {
       console.error('Failed to parse user from localStorage', error);
       localStorage.removeItem('handy-connect-user');
+      localStorage.removeItem('handy-connect-all-users');
     } finally {
       setLoading(false);
     }
@@ -66,9 +74,9 @@ export function AuthProvider({children}: {children: ReactNode}) {
       return null; // User already exists
     }
 
-    // This only updates the state in memory, it won't persist across page reloads
     const newUsers = [...users, newUser];
     setUsers(newUsers);
+    localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
     // @ts-ignore
     passwordStore[newUser.email.toLowerCase()] = password;
 
