@@ -50,7 +50,7 @@ export function Header() {
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <Wrench className="h-6 w-6 text-primary" />
-                <span className="font-bold">HandyConnect</span>
+                <span className="font-bold">Handy</span>
               </SheetTitle>
             </SheetHeader>
             <div className="py-4">
@@ -116,7 +116,7 @@ export function Header() {
         <div className="flex flex-1 items-center justify-between md:justify-start">
           <Link href="/" className="ml-2 md:ml-6 flex items-center space-x-2">
             <Wrench className="h-6 w-6 text-primary" />
-            <span className="hidden font-bold sm:inline-block">HandyConnect</span>
+            <span className="hidden font-bold sm:inline-block">Handy</span>
           </Link>
         </div>
 

@@ -12,7 +12,7 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'HandyConnect',
+  title: 'Handy',
   description: 'Connect with skilled workers in your area.',
 };
 

@@ -24,7 +24,7 @@ export default function Home() {
               Connect with Skilled Workers
             </h1>
             <p className="mx-auto max-w-[700px] text-lg md:text-xl">
-              HandyConnect helps you find trusted local professionals for any job, big or small.
+              Handy helps you find trusted local professionals for any job, big or small.
             </p>
           </div>
         </div>
