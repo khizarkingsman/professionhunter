@@ -32,11 +32,11 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
+    countryCode: '',
     phone: '',
     country: '',
     city: '',
     age: '',
-    experience: '',
     profession: '',
     password: '',
     name: '',
@@ -58,11 +58,12 @@ export default function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const fullPhoneNumber = `${formData.countryCode}${formData.phone}`;
     const newUser: Partial<User> = {
       id: `user-${Date.now()}`,
       name: formData.name,
       email: formData.email,
-      phone: formData.phone,
+      phone: fullPhoneNumber,
       country: formData.country,
       city: formData.city,
       role: userType as 'seeker' | 'worker',
@@ -148,14 +149,26 @@ export default function SignupPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 234 567 890"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="countryCode"
+                    type="tel"
+                    placeholder="+1"
+                    required
+                    className="w-16"
+                    value={formData.countryCode}
+                    onChange={handleChange}
+                  />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="234 567 890"
+                    required
+                    className="flex-1"
+                    value={formData.phone}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
