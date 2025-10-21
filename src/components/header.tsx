@@ -41,7 +41,7 @@ export function Header() {
       <div className="container flex h-14 items-center">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden">
+            <Button variant="ghost" size="icon">
               <Menu />
               <span className="sr-only">Toggle Menu</span>
             </Button>
@@ -121,7 +121,7 @@ export function Header() {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <nav className="hidden gap-2 md:flex">
+          <nav className="hidden gap-2">
             {user ? (
               <>
                 <Button variant="ghost" asChild>
