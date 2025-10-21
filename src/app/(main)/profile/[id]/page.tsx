@@ -3,15 +3,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import {users as mockUsers, reviews as allReviews} from '@/lib/data';
-import type {User} from '@/lib/data';
+import {reviews as mockReviews, users as mockUsers} from '@/lib/data';
+import type {Review, User} from '@/lib/data';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
-import {Star, MessageCircle, Info, CalendarDays, MapPin, Mail, Phone} from 'lucide-react';
+import {Star, MessageCircle, Info, MapPin, Mail, Phone} from 'lucide-react';
 import ReviewForm from '@/components/review-form';
 import {useEffect, useState, use} from 'react';
+import {useAuth} from '@/context/auth-context';
 
 function StarRating({rating, className}: {rating: number; className?: string}) {
   return (
@@ -33,6 +34,8 @@ function StarRating({rating, className}: {rating: number; className?: string}) {
 export default function WorkerProfilePage({params: paramsPromise}: {params: Promise<{id: string}>}) {
   const params = use(paramsPromise);
   const [users, setUsers] = useState<User[]>([]);
+  const {user: currentUser} = useAuth();
+  const [reviews, setReviews] = useState<Review[]>(mockReviews);
 
   useEffect(() => {
     const storedUsers = localStorage.getItem('handy-connect-all-users');
@@ -44,7 +47,15 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
   }, []);
 
   const worker = users.find(u => u.id === params.id && u.role === 'worker');
-  const workerReviews = allReviews.filter(r => r.workerId === params.id);
+  const workerReviews = reviews.filter(r => r.workerId === params.id);
+  const averageRating =
+    workerReviews.length > 0
+      ? workerReviews.reduce((acc, r) => acc + r.rating, 0) / workerReviews.length
+      : 0;
+
+  const handleReviewSubmitted = (newReview: Review) => {
+    setReviews(prevReviews => [...prevReviews, newReview]);
+  };
 
   if (!worker) {
     return <div className="container text-center py-20">Worker not found.</div>;
@@ -80,7 +91,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
               <h1 className="text-3xl font-bold font-headline">{worker.name}</h1>
               <p className="text-lg text-primary font-semibold">{worker.profession}</p>
               <div className="flex items-center gap-2 mt-2">
-                <StarRating rating={worker.avgRating ?? 0} />
+                <StarRating rating={averageRating} />
                 <span className="text-muted-foreground">({workerReviews.length} reviews)</span>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 mt-6 w-full">
@@ -94,7 +105,11 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                   variant="outline"
                   className="flex-1 bg-[#25D366] text-white hover:bg-[#25D366]/90 hover:text-white border-[#25D366] hover:border-[#25D366]/90"
                 >
-                  <a href={`https://wa.me/${worker.phone.replace(/\\+/g, '')}`} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={`https://wa.me/${worker.phone.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <WhatsAppIcon /> WhatsApp
                   </a>
                 </Button>
@@ -109,7 +124,6 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
               </div>
               <Separator />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="text-primary" /> <strong>Location:</strong> {worker.city},{' '}
                   {worker.country}
@@ -163,7 +177,21 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
               <Separator />
               <div>
                 <h2 className="text-xl font-bold font-headline mb-4">Leave a Review</h2>
-                <ReviewForm />
+                {currentUser && currentUser.role === 'seeker' ? (
+                  <ReviewForm
+                    workerId={worker.id}
+                    seeker={currentUser}
+                    onReviewSubmitted={handleReviewSubmitted}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-muted-foreground text-sm">
+                        You must be logged in as a service seeker to leave a review.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </CardContent>
