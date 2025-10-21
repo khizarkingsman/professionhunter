@@ -11,7 +11,7 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
 import {Star, MessageCircle, Info, CalendarDays, MapPin, Mail, Phone} from 'lucide-react';
 import ReviewForm from '@/components/review-form';
-import { useEffect, useState } from 'react';
+import {useEffect, useState, use} from 'react';
 
 function StarRating({rating, className}: {rating: number; className?: string}) {
   return (
@@ -30,7 +30,8 @@ function StarRating({rating, className}: {rating: number; className?: string}) {
   );
 }
 
-export default function WorkerProfilePage({params}: {params: {id: string}}) {
+export default function WorkerProfilePage({params: paramsPromise}: {params: Promise<{id: string}>}) {
+  const params = use(paramsPromise);
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
