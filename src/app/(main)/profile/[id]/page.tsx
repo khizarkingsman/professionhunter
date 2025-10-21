@@ -94,7 +94,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                   variant="outline"
                   className="flex-1 bg-[#25D366] text-white hover:bg-[#25D366]/90 hover:text-white border-[#25D366] hover:border-[#25D366]/90"
                 >
-                  <a href={`https://wa.me/${worker.phone}`} target="_blank" rel="noopener noreferrer">
+                  <a href={`https://wa.me/${worker.phone.replace(/\\+/g, '')}`} target="_blank" rel="noopener noreferrer">
                     <WhatsAppIcon /> WhatsApp
                   </a>
                 </Button>
