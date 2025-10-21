@@ -13,12 +13,35 @@ import {
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
+import {useAuth} from '@/context/auth-context';
 import {User} from '@/lib/data';
+import {useToast} from '@/hooks/use-toast';
 import {Edit} from 'lucide-react';
 import {useState} from 'react';
 
 export default function EditProfileDialog({worker}: {worker: User}) {
   const [bio, setBio] = useState(worker.bio || '');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const {updateUser} = useAuth();
+  const {toast} = useToast();
+
+  const handleSaveChanges = () => {
+    let updatedUser = {...worker, bio};
+
+    if (photo) {
+      // In a real app, you would upload the file to a storage service
+      // and get a URL. Here, we'll use URL.createObjectURL for a local preview.
+      const photoUrl = URL.createObjectURL(photo);
+      updatedUser = {...updatedUser, avatarUrl: photoUrl};
+    }
+
+    updateUser(updatedUser);
+
+    toast({
+      title: 'Profile Updated',
+      description: 'Your profile has been successfully saved.',
+    });
+  };
 
   return (
     <Dialog>
@@ -39,7 +62,13 @@ export default function EditProfileDialog({worker}: {worker: User}) {
             <Label htmlFor="photo" className="text-right">
               Photo
             </Label>
-            <Input id="photo" type="file" className="col-span-3" />
+            <Input
+              id="photo"
+              type="file"
+              className="col-span-3"
+              accept="image/*"
+              onChange={e => setPhoto(e.target.files ? e.target.files[0] : null)}
+            />
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="bio" className="text-right pt-2">
@@ -56,7 +85,9 @@ export default function EditProfileDialog({worker}: {worker: User}) {
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" onClick={handleSaveChanges}>
+              Save changes
+            </Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

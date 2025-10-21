@@ -21,6 +21,7 @@ interface AuthContextType {
   login: (email: string, password: string) => User | null;
   logout: () => void;
   signup: (newUser: User, password: string) => User | null;
+  updateUser: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +33,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
   useEffect(() => {
     // This effect runs only on the client, after hydration.
+    setLoading(true);
     try {
       const storedUser = localStorage.getItem('handy-connect-user');
       if (storedUser) {
@@ -43,11 +45,11 @@ export function AuthProvider({children}: {children: ReactNode}) {
         setUsers(allUsers);
         // Also update the in-memory password store for newly signed up users
         allUsers.forEach((u: User) => {
-            if(u.email && !passwordStore[u.email.toLowerCase()]){
-                // This is a placeholder for signup-created passwords.
-                // In a real app this would be handled securely.
-                passwordStore[u.email.toLowerCase()] = 'password123';
-            }
+          if (u.email && !passwordStore[u.email.toLowerCase()]) {
+            // This is a placeholder for signup-created passwords.
+            // In a real app this would be handled securely.
+            passwordStore[u.email.toLowerCase()] = 'password123';
+          }
         });
       } else {
         localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
@@ -88,11 +90,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
     const newUsers = [...users, newUser];
     setUsers(newUsers);
     localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
-    
+
     // Store password for the new user for the current session
     // @ts-ignore
     passwordStore[newUser.email.toLowerCase()] = password;
-
 
     // Log the new user in
     setUser(newUser);
@@ -100,8 +101,19 @@ export function AuthProvider({children}: {children: ReactNode}) {
     return newUser;
   };
 
+  const updateUser = (updatedUser: User) => {
+    const newUsers = users.map(u => (u.id === updatedUser.id ? updatedUser : u));
+    setUsers(newUsers);
+    localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+
+    if (user?.id === updatedUser.id) {
+      setUser(updatedUser);
+      localStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{user, loading, login, logout, signup}}>
+    <AuthContext.Provider value={{user, loading, login, logout, signup, updateUser}}>
       {children}
     </AuthContext.Provider>
   );
