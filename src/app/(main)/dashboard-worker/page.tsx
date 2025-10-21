@@ -3,10 +3,10 @@
 
 import {
   chats as mockChats,
-  reviews as allReviews,
+  reviews as mockReviews,
   users as mockUsers,
 } from '@/lib/data';
-import type { User } from '@/lib/data';
+import type { User, Review } from '@/lib/data';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   Card,
@@ -31,6 +31,7 @@ export default function WorkerDashboardPage() {
   const router = useRouter();
 
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     // In a real app, you would fetch users, but here we get them from localStorage
@@ -40,6 +41,12 @@ export default function WorkerDashboardPage() {
       setAllUsers(JSON.parse(storedUsers));
     } else {
         setAllUsers(mockUsers);
+    }
+    const storedReviews = localStorage.getItem('handy-connect-all-reviews');
+    if (storedReviews) {
+        setAllReviews(JSON.parse(storedReviews));
+    } else {
+        setAllReviews(mockReviews);
     }
   }, []);
 

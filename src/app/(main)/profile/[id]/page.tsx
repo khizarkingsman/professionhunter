@@ -35,7 +35,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
   const params = use(paramsPromise);
   const [users, setUsers] = useState<User[]>([]);
   const {user: currentUser} = useAuth();
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     const storedUsers = localStorage.getItem('handy-connect-all-users');
@@ -43,6 +43,13 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
       setUsers(JSON.parse(storedUsers));
     } else {
       setUsers(mockUsers);
+    }
+    const storedReviews = localStorage.getItem('handy-connect-all-reviews');
+    if (storedReviews) {
+        setReviews(JSON.parse(storedReviews));
+    } else {
+        setReviews(mockReviews);
+        localStorage.setItem('handy-connect-all-reviews', JSON.stringify(mockReviews));
     }
   }, []);
 
@@ -54,7 +61,9 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
       : 0;
 
   const handleReviewSubmitted = (newReview: Review) => {
-    setReviews(prevReviews => [...prevReviews, newReview]);
+    const updatedReviews = [...reviews, newReview];
+    setReviews(updatedReviews);
+    localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
   };
 
   if (!worker) {
