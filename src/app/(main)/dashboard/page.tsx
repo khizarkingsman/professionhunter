@@ -76,12 +76,6 @@ export default function Dashboard() {
         </h1>
         <p className="text-muted-foreground">Browse our list of trusted local workers.</p>
         <div className="flex flex-col md:flex-row gap-4">
-          <Input
-            placeholder="Search by name or keyword..."
-            className="max-w-sm"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
           <Select value={selectedProfession} onValueChange={setSelectedProfession}>
             <SelectTrigger className="w-full md:w-[280px]">
               <SelectValue placeholder="Filter by profession" />
