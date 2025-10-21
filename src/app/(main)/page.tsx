@@ -22,7 +22,7 @@ export default function Home() {
                 <Link href="/dashboard">Find a Service</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/signup">Become a Worker</Link>
+                <Link href="/signup">register here</Link>
               </Button>
             </div>
           </div>
