@@ -17,11 +17,6 @@ export default function Home() {
                 HandyConnect helps you find trusted local professionals for any job, big or small.
               </p>
             </div>
-            <div className="space-x-4">
-              <Button asChild size="lg">
-                <Link href="/dashboard">Find a Service</Link>
-              </Button>
-            </div>
           </div>
         </div>
       </section>
