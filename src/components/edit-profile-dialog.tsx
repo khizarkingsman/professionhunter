@@ -1,3 +1,4 @@
+
 'use client';
 import {Button} from '@/components/ui/button';
 import {
@@ -29,18 +30,24 @@ export default function EditProfileDialog({worker}: {worker: User}) {
     let updatedUser = {...worker, bio};
 
     if (photo) {
-      // In a real app, you would upload the file to a storage service
-      // and get a URL. Here, we'll use URL.createObjectURL for a local preview.
-      const photoUrl = URL.createObjectURL(photo);
-      updatedUser = {...updatedUser, avatarUrl: photoUrl};
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        updatedUser = {...updatedUser, avatarUrl: base64String};
+        updateUser(updatedUser);
+        toast({
+          title: 'Profile Updated',
+          description: 'Your profile has been successfully saved.',
+        });
+      };
+      reader.readAsDataURL(photo);
+    } else {
+      updateUser(updatedUser);
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile has been successfully saved.',
+      });
     }
-
-    updateUser(updatedUser);
-
-    toast({
-      title: 'Profile Updated',
-      description: 'Your profile has been successfully saved.',
-    });
   };
 
   return (
@@ -85,7 +92,7 @@ export default function EditProfileDialog({worker}: {worker: User}) {
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="submit" onClick={handleSaveChanges}>
+            <Button type="button" onClick={handleSaveChanges}>
               Save changes
             </Button>
           </DialogClose>
