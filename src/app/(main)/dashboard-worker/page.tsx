@@ -18,7 +18,7 @@ import {
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
-import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays} from 'lucide-react';
+import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone} from 'lucide-react';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
@@ -63,6 +63,18 @@ export default function WorkerDashboardPage() {
 
   const workerReviews = allReviews.filter(r => r.workerId === worker.id);
   const workerChats = mockChats.filter(c => c.participants.includes(worker.id));
+  
+  const WhatsAppIcon = () => (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-5 h-5 fill-current"
+    >
+      <title>WhatsApp</title>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52s-.67-.816-.917-1.107-.5-.249-.699-.249h-.6c-.249 0-.622.124-.87.371-.249.249-.966.923-.966 2.245 0 1.322.99 2.615 1.14 2.79.149.174 1.96 3.04 4.76 4.22.676.299 1.25.478 1.67.622.717.255 1.37.213 1.87.126.548-.099 1.758-.718 2.006-1.413.248-.695.248-1.289.173-1.413-.075-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 5.451 0 9.885 4.434 9.889 9.884-.001 5.45-4.438 9.884-9.889 9.884m8.392-18.282a11.815 11.815 0 00-11.813 11.813c0 1.991.486 3.861 1.354 5.495L.62 23.38l6.125-1.597a11.81 11.81 0 005.666 1.36h.004c6.513 0 11.813-5.299 11.813-11.812a11.825 11.825 0 00-11.813-11.813Z" />
+    </svg>
+  );
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
@@ -184,20 +196,21 @@ export default function WorkerDashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Your Conversations</CardTitle>
-              <CardDescription>Chat with potential customers.</CardDescription>
+              <CardDescription>Click on a conversation to open WhatsApp.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
                 {workerChats.map(chat => {
                   const otherUserId = chat.participants.find(p => p !== worker.id);
                   const otherUser = allUsers.find(u => u.id === otherUserId);
-                  const lastMessage = chat.messages[chat.messages.length - 1];
                   if (!otherUser) return null;
 
                   return (
-                    <Link
+                    <a
                       key={chat.id}
-                      href={`/chat/${otherUser.id}`}
+                      href={`https://wa.me/${otherUser.phone.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
                     >
                       <Avatar>
@@ -206,10 +219,22 @@ export default function WorkerDashboardPage() {
                       </Avatar>
                       <div className="flex-1 truncate">
                         <p className="font-semibold">{otherUser.name}</p>
-                        <p className="text-sm text-muted-foreground truncate">{lastMessage.text}</p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="w-3 h-3"/>
+                            <span>{otherUser.phone}</span>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">{lastMessage.timestamp}</p>
-                    </Link>
+                      <div className="flex flex-col items-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-auto px-2 bg-green-500 hover:bg-green-600 text-white hover:text-white"
+                        >
+                          <WhatsAppIcon />
+                          <span className="ml-2 hidden sm:inline">Chat</span>
+                        </Button>
+                      </div>
+                    </a>
                   );
                 })}
                  {workerChats.length === 0 && (
