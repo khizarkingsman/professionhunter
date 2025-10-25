@@ -216,11 +216,8 @@ export default function WorkerDashboardPage() {
                   if (!otherUser) return null;
 
                   return (
-                    <a
+                    <div
                       key={chat.id}
-                      href={`https://wa.me/${otherUser.phone.replace(/[^0-9]/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
                     >
                       <Avatar>
@@ -234,17 +231,35 @@ export default function WorkerDashboardPage() {
                             <span>{otherUser.phone}</span>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-auto px-2"
+                          asChild
+                        >
+                           <Link href={`/chat/${otherUser.id}`}>
+                            <MessageSquare className="h-4 w-4" />
+                            <span className="ml-2 hidden sm:inline">App Chat</span>
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-8 w-auto px-2 bg-green-500 hover:bg-green-600 text-white hover:text-white"
+                          asChild
                         >
-                          <WhatsAppIcon />
-                          <span className="ml-2 hidden sm:inline">Chat</span>
+                          <a
+                            href={`https://wa.me/${otherUser.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <WhatsAppIcon />
+                            <span className="ml-2 hidden sm:inline">WhatsApp</span>
+                          </a>
                         </Button>
                       </div>
-                    </a>
+                    </div>
                   );
                 })}
                  {workerChats.length === 0 && (
