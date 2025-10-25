@@ -196,7 +196,9 @@ export default function WorkerDashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Your Conversations</CardTitle>
-              <CardDescription>Click on a conversation to open WhatsApp.</CardDescription>
+              <CardDescription>
+                Manage your client communications and open conversations in WhatsApp.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
