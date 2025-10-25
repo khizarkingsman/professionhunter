@@ -104,7 +104,7 @@ export default function SignupPage() {
           <CardHeader>
             <CardTitle className="text-2xl font-headline">Create an account</CardTitle>
             <CardDescription>
-              Join Handy to find or offer professional services.
+              Join ProConnect to find or offer professional services.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">

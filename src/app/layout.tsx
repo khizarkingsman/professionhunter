@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import {Toaster} from '@/components/ui/toaster';
@@ -12,7 +13,7 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Handy',
+  title: 'ProConnect',
   description: 'Connect with skilled workers in your area.',
 };
 
