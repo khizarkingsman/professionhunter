@@ -1,8 +1,9 @@
+
 'use client';
 
 import React from 'react';
 import {chats as mockChats, users as mockUsers} from '@/lib/data';
-import type {User} from '@/lib/data';
+import type {User, Chat, ChatMessage} from '@/lib/data';
 import ChatLayout from '@/components/chat/chat-layout';
 import {useAuth} from '@/context/auth-context';
 import {useRouter} from 'next/navigation';
@@ -14,7 +15,7 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
   const otherUserId = params.userId;
   
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
-  const [allChats, setAllChats] = React.useState<typeof mockChats>([]);
+  const [allChats, setAllChats] = React.useState<Chat[]>([]);
 
   React.useEffect(() => {
     // In a real app, this data would be fetched, but here we use localStorage
@@ -25,9 +26,46 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
     } else {
       setAllUsers(mockUsers);
     }
-    // For now, chats are not persisted, so we use the initial mock data.
-    setAllChats(mockChats);
+    
+    const storedChats = localStorage.getItem('handy-connect-all-chats');
+    if (storedChats) {
+      setAllChats(JSON.parse(storedChats));
+    } else {
+      setAllChats(mockChats);
+      localStorage.setItem('handy-connect-all-chats', JSON.stringify(mockChats));
+    }
   }, []);
+
+  const handleNewMessage = (newMessage: ChatMessage) => {
+    setAllChats(prevChats => {
+      const chatIndex = prevChats.findIndex(
+        c => c.participants.includes(loggedInUser!.id) && c.participants.includes(otherUserId)
+      );
+
+      let updatedChats;
+
+      if (chatIndex > -1) {
+        // Add message to existing chat
+        updatedChats = [...prevChats];
+        const updatedChat = {
+          ...updatedChats[chatIndex],
+          messages: [...updatedChats[chatIndex].messages, newMessage],
+        };
+        updatedChats[chatIndex] = updatedChat;
+      } else {
+        // Create a new chat
+        const newChat: Chat = {
+          id: `chat-${Date.now()}`,
+          participants: [loggedInUser!.id, otherUserId],
+          messages: [newMessage],
+        };
+        updatedChats = [...prevChats, newChat];
+      }
+      
+      localStorage.setItem('handy-connect-all-chats', JSON.stringify(updatedChats));
+      return updatedChats;
+    });
+  };
 
   React.useEffect(() => {
     if (!loading && !loggedInUser) {
@@ -78,6 +116,7 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
         currentUser={loggedInUser}
         otherUser={otherUser}
         workerProfession={worker.profession}
+        onNewMessage={handleNewMessage}
       />
     </main>
   );

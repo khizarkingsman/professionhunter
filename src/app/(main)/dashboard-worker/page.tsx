@@ -6,7 +6,7 @@ import {
   reviews as mockReviews,
   users as mockUsers,
 } from '@/lib/data';
-import type { User, Review } from '@/lib/data';
+import type { User, Review, Chat } from '@/lib/data';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   Card,
@@ -32,6 +32,7 @@ export default function WorkerDashboardPage() {
 
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [allChats, setAllChats] = useState<Chat[]>([]);
 
   useEffect(() => {
     // In a real app, you would fetch users, but here we get them from localStorage
@@ -48,6 +49,13 @@ export default function WorkerDashboardPage() {
     } else {
         setAllReviews(mockReviews);
     }
+    const storedChats = localStorage.getItem('handy-connect-all-chats');
+    if (storedChats) {
+      setAllChats(JSON.parse(storedChats));
+    } else {
+      setAllChats(mockChats);
+      localStorage.setItem('handy-connect-all-chats', JSON.stringify(mockChats));
+    }
   }, []);
 
   useEffect(() => {
@@ -62,7 +70,7 @@ export default function WorkerDashboardPage() {
   }
 
   const workerReviews = allReviews.filter(r => r.workerId === worker.id);
-  const workerChats = mockChats.filter(c => c.participants.includes(worker.id));
+  const workerChats = allChats.filter(c => c.participants.includes(worker.id));
   
   const WhatsAppIcon = () => (
     <svg

@@ -1,6 +1,7 @@
+
 'use client';
 
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import type {Chat, User, ChatMessage} from '@/lib/data';
 import {suggestHelpfulArticles} from '@/ai/flows/suggest-helpful-articles-in-chat';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
@@ -17,6 +18,7 @@ interface ChatLayoutProps {
   currentUser: User;
   otherUser: User;
   workerProfession: string;
+  onNewMessage: (message: ChatMessage) => void;
 }
 
 export default function ChatLayout({
@@ -24,11 +26,16 @@ export default function ChatLayout({
   currentUser,
   otherUser,
   workerProfession,
+  onNewMessage,
 }: ChatLayoutProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
   const {user} = useAuth();
   const {toast} = useToast();
+  
+  useEffect(() => {
+    setMessages(initialChat.messages);
+  }, [initialChat.messages]);
 
   const handleSendMessage = (text: string) => {
     const newMessage: ChatMessage = {
@@ -38,6 +45,7 @@ export default function ChatLayout({
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
     };
     setMessages(prev => [...prev, newMessage]);
+    onNewMessage(newMessage);
 
     // If the current user is a seeker sending a message to a worker, show a toast.
     // In a real app, this would be a push notification to the worker.
