@@ -30,31 +30,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({children}: {children: ReactNode}) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration.
     setLoading(true);
     try {
+      const storedUsers = localStorage.getItem('handy-connect-all-users');
+      let allUsers: User[];
+      if (storedUsers) {
+        allUsers = JSON.parse(storedUsers);
+      } else {
+        allUsers = mockUsers;
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
+      }
+      setUsers(allUsers);
+      
+      // Also update the in-memory password store for any user, including newly signed up users.
+      allUsers.forEach((u: User) => {
+        if (u.email && !passwordStore[u.email.toLowerCase()]) {
+          // This is a placeholder for signup-created passwords.
+          // In a real app this would be handled securely, but for this demo
+          // we'll use a default password. We assume all new signups use this.
+          passwordStore[u.email.toLowerCase()] = 'password123';
+        }
+      });
+
       const storedUser = localStorage.getItem('handy-connect-user');
       if (storedUser) {
         setUser(JSON.parse(storedUser));
-      }
-      const storedUsers = localStorage.getItem('handy-connect-all-users');
-      if (storedUsers) {
-        const allUsers: User[] = JSON.parse(storedUsers);
-        setUsers(allUsers);
-        // Also update the in-memory password store for newly signed up users
-        allUsers.forEach((u: User) => {
-          if (u.email && !passwordStore[u.email.toLowerCase()]) {
-            // This is a placeholder for signup-created passwords.
-            // In a real app this would be handled securely, but for this demo
-            // we'll use a default password.
-            passwordStore[u.email.toLowerCase()] = 'password123';
-          }
-        });
-      } else {
-        localStorage.setItem('handy-connect-all-users', JSON.stringify(mockUsers));
       }
     } catch (error) {
       console.error('Failed to parse user from localStorage', error);
