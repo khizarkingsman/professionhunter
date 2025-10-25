@@ -50,10 +50,7 @@ export default function ChatLayout({
     // If the current user is a seeker sending a message to a worker, show a toast.
     // In a real app, this would be a push notification to the worker.
     if (currentUser.role === 'seeker' && otherUser.role === 'worker') {
-      toast({
-        title: 'New Message',
-        description: `You have a new message from ${currentUser.name}.`,
-      });
+      
     }
   };
 
