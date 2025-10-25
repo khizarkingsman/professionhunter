@@ -9,7 +9,8 @@ import ChatInput from './chat-input';
 import Link from 'next/link';
 import {ChevronLeft} from 'lucide-react';
 import {Button} from '../ui/button';
-import { useAuth } from '@/context/auth-context';
+import {useAuth} from '@/context/auth-context';
+import {useToast} from '@/hooks/use-toast';
 
 interface ChatLayoutProps {
   chat: Chat;
@@ -27,6 +28,7 @@ export default function ChatLayout({
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
   const {user} = useAuth();
+  const {toast} = useToast();
 
   const handleSendMessage = (text: string) => {
     const newMessage: ChatMessage = {
@@ -36,6 +38,15 @@ export default function ChatLayout({
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
     };
     setMessages(prev => [...prev, newMessage]);
+
+    // If the current user is a seeker sending a message to a worker, show a toast.
+    // In a real app, this would be a push notification to the worker.
+    if (currentUser.role === 'seeker' && otherUser.role === 'worker') {
+      toast({
+        title: 'New Message',
+        description: `You have a new message from ${currentUser.name}.`,
+      });
+    }
   };
 
   const handleGetSuggestion = async () => {
@@ -77,11 +88,11 @@ export default function ChatLayout({
     }
     // If the current user is a seeker, the "back" link should go to the other user's (the worker's) profile
     if (otherUser.role === 'worker') {
-       return `/profile/${otherUser.id}`;
+      return `/profile/${otherUser.id}`;
     }
     // Fallback for seeker-seeker chat or other edge cases
     return '/dashboard';
-  }
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
