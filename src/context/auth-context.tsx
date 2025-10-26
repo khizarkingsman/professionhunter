@@ -58,7 +58,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
       const storedUser = localStorage.getItem('handy-connect-user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Find the full user object from allUsers to ensure avatarUrl is fresh
+        const fullUser = allUsers.find(u => u.id === parsedUser.id);
+        setUser(fullUser || parsedUser);
       }
     } catch (error) {
       console.error('Failed to parse user from localStorage', error);
@@ -114,7 +117,18 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     if (user?.id === updatedUser.id) {
       setUser(updatedUser);
-      localStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
+      // To prevent quota errors, don't store the potentially large avatarUrl in the current user session storage.
+      // It will be loaded from the 'all-users' storage on next page load anyway.
+      const userForSessionStorage = { ...updatedUser };
+      if (userForSessionStorage.avatarUrl && userForSessionStorage.avatarUrl.startsWith('data:image')) {
+        // We can't remove it completely or the UI will think it's gone. 
+        // We'll replace it with a short placeholder, but a better approach is to not store large data here.
+        // For now, we will store the object without it to avoid the crash.
+        const { avatarUrl, ...rehydratedUser } = userForSessionStorage;
+        localStorage.setItem('handy-connect-user', JSON.stringify(rehydratedUser));
+      } else {
+        localStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
+      }
     }
   };
 
