@@ -65,7 +65,7 @@ export function Header() {
                       </Avatar>
                       <div className="flex flex-col">
                         <span className="font-semibold text-sm">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                        <span className="text-xs text-muted-foreground">@{user.username}</span>
                       </div>
                     </div>
                   </div>
