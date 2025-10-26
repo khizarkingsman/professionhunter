@@ -148,34 +148,37 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
               <div>
                 <h2 className="text-xl font-bold font-headline mb-4">Reviews</h2>
                 <div className="space-y-6">
-                  {workerReviews.map(review => (
-                    <div key={review.id}>
-                      <div className="flex items-start gap-4">
-                        <Avatar>
-                          <AvatarImage src={review.seekerAvatarUrl} alt={review.seekerName} />
-                          <AvatarFallback>{review.seekerName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-semibold">{review.seekerName}</p>
-                            <p className="text-xs text-muted-foreground">{review.createdAt}</p>
+                  {workerReviews.map(review => {
+                    const seeker = users.find(u => u.id === review.seekerId);
+                    return (
+                      <div key={review.id}>
+                        <div className="flex items-start gap-4">
+                          <Avatar>
+                            <AvatarImage src={review.seekerAvatarUrl} alt={review.seekerName} />
+                            <AvatarFallback>{review.seekerName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold">@{seeker?.username || review.seekerName}</p>
+                              <p className="text-xs text-muted-foreground">{review.createdAt}</p>
+                            </div>
+                            <StarRating rating={review.rating} className="my-1" />
+                            <p className="text-sm text-muted-foreground">{review.comment}</p>
+                            {review.reply && (
+                              <Card className="mt-3 bg-secondary">
+                                <CardContent className="p-3 text-sm">
+                                  <p className="font-semibold text-foreground mb-1">
+                                    Reply from {worker.name}
+                                  </p>
+                                  <p className="text-muted-foreground">{review.reply}</p>
+                                </CardContent>
+                              </Card>
+                            )}
                           </div>
-                          <StarRating rating={review.rating} className="my-1" />
-                          <p className="text-sm text-muted-foreground">{review.comment}</p>
-                          {review.reply && (
-                            <Card className="mt-3 bg-secondary">
-                              <CardContent className="p-3 text-sm">
-                                <p className="font-semibold text-foreground mb-1">
-                                  Reply from {worker.name}
-                                </p>
-                                <p className="text-muted-foreground">{review.reply}</p>
-                              </CardContent>
-                            </Card>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {workerReviews.length === 0 && (
                     <p className="text-muted-foreground text-sm">
                       This worker has no reviews yet.
