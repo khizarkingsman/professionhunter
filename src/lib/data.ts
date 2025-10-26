@@ -19,6 +19,7 @@ export const professions: Profession[] = [
 export type User = {
   id: string;
   name: string;
+  username: string;
   role: 'worker' | 'seeker';
   email: string;
   country: string;
@@ -62,6 +63,7 @@ export const users: User[] = [
   {
     id: 'worker-1',
     name: 'John Doe',
+    username: 'johndoe',
     role: 'worker',
     email: 'john.d@example.com',
     country: 'USA',
@@ -77,6 +79,7 @@ export const users: User[] = [
   {
     id: 'worker-2',
     name: 'Jane Smith',
+    username: 'janesmith',
     role: 'worker',
     email: 'jane.s@example.com',
     country: 'USA',
@@ -92,6 +95,7 @@ export const users: User[] = [
   {
     id: 'worker-3',
     name: 'Mike Johnson',
+    username: 'mikejohnson',
     role: 'worker',
     email: 'mike.j@example.com',
     country: 'USA',
@@ -107,6 +111,7 @@ export const users: User[] = [
   {
     id: 'worker-4',
     name: 'Emily White',
+    username: 'emilywhite',
     role: 'worker',
     email: 'emily.w@example.com',
     country: 'USA',
@@ -122,6 +127,7 @@ export const users: User[] = [
   {
     id: 'seeker-1',
     name: 'Alice Brown',
+    username: 'alicebrown',
     role: 'seeker',
     email: 'alice.b@example.com',
     country: 'USA',
@@ -133,6 +139,7 @@ export const users: User[] = [
   {
     id: 'seeker-2',
     name: 'Bob Green',
+    username: 'bobgreen',
     role: 'seeker',
     email: 'bob.g@example.com',
     country: 'USA',

@@ -40,6 +40,7 @@ export default function SignupPage() {
     profession: '',
     password: '',
     name: '',
+    username: '',
   });
   const {signup} = useAuth();
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function SignupPage() {
     const newUser: Partial<User> = {
       id: `user-${Date.now()}`,
       name: formData.name,
+      username: formData.username,
       email: formData.email,
       phone: fullPhoneNumber,
       country: formData.country,
@@ -125,15 +127,27 @@ export default function SignupPage() {
                 </div>
               </RadioGroup>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                placeholder="John Doe"
-                required
-                value={formData.name}
-                onChange={handleChange}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  placeholder="John Doe"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  placeholder="johndoe"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-2">
