@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from '@/components/ui/card';
@@ -26,7 +27,7 @@ export function WorkerCard({worker}: WorkerCardProps) {
           </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow">
-          <CardTitle className="text-lg font-headline mb-2">{worker.name}</CardTitle>
+          <CardTitle className="text-lg font-headline mb-2">@{worker.username}</CardTitle>
           <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
             <Badge variant="outline">{worker.profession}</Badge>
             {worker.avgRating && (
