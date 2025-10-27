@@ -9,7 +9,7 @@ import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
-import {Star, MessageCircle, Info, MapPin, Mail, Phone} from 'lucide-react';
+import {Star, MessageCircle, Info, MapPin, Mail, Phone, Trash2} from 'lucide-react';
 import ReviewForm from '@/components/review-form';
 import {useEffect, useState, use} from 'react';
 import {useAuth} from '@/context/auth-context';
@@ -62,6 +62,12 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
 
   const handleReviewSubmitted = (newReview: Review) => {
     const updatedReviews = [...reviews, newReview];
+    setReviews(updatedReviews);
+    localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
+  };
+  
+  const handleDeleteReview = (reviewId: string) => {
+    const updatedReviews = reviews.filter(r => r.id !== reviewId);
     setReviews(updatedReviews);
     localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
   };
@@ -164,16 +170,28 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                             </div>
                             <StarRating rating={review.rating} className="my-1" />
                             <p className="text-sm text-muted-foreground">{review.comment}</p>
-                            {review.reply && (
-                              <Card className="mt-3 bg-secondary">
-                                <CardContent className="p-3 text-sm">
-                                  <p className="font-semibold text-foreground mb-1">
-                                    Reply from {worker.name}
-                                  </p>
-                                  <p className="text-muted-foreground">{review.reply}</p>
-                                </CardContent>
-                              </Card>
-                            )}
+                            <div className="flex items-center justify-between mt-2">
+                              {review.reply && (
+                                <Card className="flex-1 bg-secondary">
+                                  <CardContent className="p-3 text-sm">
+                                    <p className="font-semibold text-foreground mb-1">
+                                      Reply from {worker.name}
+                                    </p>
+                                    <p className="text-muted-foreground">{review.reply}</p>
+                                  </CardContent>
+                                </Card>
+                              )}
+                              {(currentUser?.id === review.seekerId || currentUser?.id === worker.id) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-auto"
+                                  onClick={() => handleDeleteReview(review.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

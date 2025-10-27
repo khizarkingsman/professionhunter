@@ -18,7 +18,7 @@ import {
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
-import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone} from 'lucide-react';
+import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone, Trash2} from 'lucide-react';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
@@ -48,6 +48,7 @@ export default function WorkerDashboardPage() {
         setAllReviews(JSON.parse(storedReviews));
     } else {
         setAllReviews(mockReviews);
+        localStorage.setItem('handy-connect-all-reviews', JSON.stringify(mockReviews));
     }
     const storedChats = localStorage.getItem('handy-connect-all-chats');
     if (storedChats) {
@@ -71,6 +72,12 @@ export default function WorkerDashboardPage() {
 
   const workerReviews = allReviews.filter(r => r.workerId === worker.id);
   const workerChats = allChats.filter(c => c.participants.includes(worker.id));
+
+  const handleDeleteReview = (reviewId: string) => {
+    const updatedReviews = allReviews.filter(r => r.id !== reviewId);
+    setAllReviews(updatedReviews);
+    localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
+  };
   
   const WhatsAppIcon = () => (
     <svg
@@ -182,16 +189,25 @@ export default function WorkerDashboardPage() {
                         ))}
                       </div>
                       <p className="text-sm text-muted-foreground">{review.comment}</p>
-                      {review.reply ? (
-                        <Card className="mt-3 bg-secondary">
-                          <CardContent className="p-3 text-sm">
-                            <p className="font-semibold text-foreground mb-1">Your reply:</p>
-                            <p className="text-muted-foreground">{review.reply}</p>
-                          </CardContent>
-                        </Card>
-                      ) : (
-                        <ReplyReviewDialog review={review} />
-                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        {review.reply ? (
+                          <Card className="flex-1 bg-secondary">
+                            <CardContent className="p-3 text-sm">
+                              <p className="font-semibold text-foreground mb-1">Your reply:</p>
+                              <p className="text-muted-foreground">{review.reply}</p>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <ReplyReviewDialog review={review} />
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteReview(review.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
