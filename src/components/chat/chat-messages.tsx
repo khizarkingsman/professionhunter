@@ -1,8 +1,10 @@
+
 import type {ChatMessage, User} from '@/lib/data';
 import {cn} from '@/lib/utils';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Bot} from 'lucide-react';
+import {Bot, Image as ImageIcon, Video} from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
+import Image from 'next/image';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -39,6 +41,32 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
           );
         }
 
+        const messageContent = (
+          <>
+            {message.file?.url && message.file.type.startsWith('image/') && (
+              <Image
+                src={message.file.url}
+                alt="Sent image"
+                width={300}
+                height={300}
+                className="rounded-lg object-cover"
+              />
+            )}
+            {message.file?.url && message.file.type.startsWith('video/') && (
+              <video src={message.file.url} controls className="rounded-lg max-w-xs" />
+            )}
+            {message.text && <p className="text-sm">{message.text}</p>}
+            <p
+              className={cn('text-xs mt-1 text-right', {
+                'text-primary-foreground/70': isCurrentUser,
+                'text-muted-foreground': !isCurrentUser,
+              })}
+            >
+              {message.timestamp}
+            </p>
+          </>
+        );
+
         return (
           <div
             key={message.id}
@@ -58,15 +86,7 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
                 'bg-card border': !isCurrentUser,
               })}
             >
-              <p className="text-sm">{message.text}</p>
-              <p
-                className={cn('text-xs mt-1 text-right', {
-                  'text-primary-foreground/70': isCurrentUser,
-                  'text-muted-foreground': !isCurrentUser,
-                })}
-              >
-                {message.timestamp}
-              </p>
+              {messageContent}
             </div>
             {isCurrentUser && (
               <Avatar className="h-8 w-8">

@@ -37,20 +37,30 @@ export default function ChatLayout({
     setMessages(initialChat.messages);
   }, [initialChat.messages]);
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = (text: string, file?: File) => {
     const newMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       senderId: currentUser.id,
       text,
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
     };
+
+    if (file) {
+      newMessage.file = {
+        url: URL.createObjectURL(file),
+        type: file.type,
+      };
+    }
+
     setMessages(prev => [...prev, newMessage]);
     onNewMessage(newMessage);
 
     // If the current user is a seeker sending a message to a worker, show a toast.
-    // In a real app, this would be a push notification to the worker.
     if (currentUser.role === 'seeker' && otherUser.role === 'worker') {
-      
+      toast({
+        title: 'Message Sent!',
+        description: `${otherUser.name} has been notified.`,
+      });
     }
   };
 

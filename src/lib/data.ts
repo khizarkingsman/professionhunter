@@ -1,3 +1,4 @@
+
 import {Wrench, Zap, Hammer, Paintbrush, Sparkles, Sprout} from 'lucide-react';
 import type {LucideIcon} from 'lucide-react';
 
@@ -51,6 +52,10 @@ export type ChatMessage = {
   text: string;
   timestamp: string;
   isAiSuggestion?: boolean;
+  file?: {
+    url: string;
+    type: string;
+  };
 };
 
 export type Chat = {
