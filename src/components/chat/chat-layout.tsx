@@ -30,6 +30,7 @@ export default function ChatLayout({
 }: ChatLayoutProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
   const {user} = useAuth();
   const {toast} = useToast();
   
@@ -55,12 +56,13 @@ export default function ChatLayout({
     setMessages(prev => [...prev, newMessage]);
     onNewMessage(newMessage);
 
-    // If the current user is a seeker sending a message to a worker, show a toast.
-    if (currentUser.role === 'seeker' && otherUser.role === 'worker') {
+    // If the current user is a seeker sending a message to a worker, show a toast only once.
+    if (currentUser.role === 'seeker' && otherUser.role === 'worker' && !notificationSent) {
       toast({
         title: 'Message Sent!',
         description: `${otherUser.name} has been notified.`,
       });
+      setNotificationSent(true);
     }
   };
 
