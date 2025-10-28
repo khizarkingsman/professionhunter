@@ -60,6 +60,8 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
       ? workerReviews.reduce((acc, r) => acc + r.rating, 0) / workerReviews.length
       : 0;
 
+  const hasAlreadyReviewed = currentUser && workerReviews.some(r => r.seekerId === currentUser.id);
+
   const handleReviewSubmitted = (newReview: Review) => {
     const updatedReviews = [...reviews, newReview];
     setReviews(updatedReviews);
@@ -208,11 +210,21 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
               <div>
                 <h2 className="text-xl font-bold font-headline mb-4">Leave a Review</h2>
                 {currentUser && currentUser.role === 'seeker' ? (
-                  <ReviewForm
-                    workerId={worker.id}
-                    seeker={currentUser}
-                    onReviewSubmitted={handleReviewSubmitted}
-                  />
+                  hasAlreadyReviewed ? (
+                    <Card>
+                      <CardContent className="p-4">
+                        <p className="text-muted-foreground text-sm">
+                          You have already submitted a review for this worker.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <ReviewForm
+                      workerId={worker.id}
+                      seeker={currentUser}
+                      onReviewSubmitted={handleReviewSubmitted}
+                    />
+                  )
                 ) : (
                   <Card>
                     <CardContent className="p-4">
