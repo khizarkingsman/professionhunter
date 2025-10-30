@@ -13,6 +13,7 @@ import {
 import {Menu, Wrench, LayoutDashboard, User, LogIn, UserPlus, LogOut} from 'lucide-react';
 import {useAuth} from '@/context/auth-context';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
+import { EditSeekerProfileDialog } from './edit-seeker-profile-dialog';
 
 const navLinks = [
   {href: '/dashboard', label: 'Find a Worker', icon: LayoutDashboard, roles: ['seeker']},
@@ -57,16 +58,19 @@ export function Header() {
             <div className="py-4">
               {user ? (
                 <>
-                  <div className="px-2 pb-4">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">@{user.username}</span>
-                      </div>
+                  <div className="px-2 pb-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-sm">{user.name}</span>
+                                <span className="text-xs text-muted-foreground">@{user.username}</span>
+                            </div>
+                        </div>
+                        {user.role === 'seeker' && <EditSeekerProfileDialog user={user} />}
                     </div>
                   </div>
                   <nav className="flex flex-col gap-2">

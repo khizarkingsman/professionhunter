@@ -70,25 +70,7 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
-      <div className="flex flex-col md:flex-row gap-8">
-        <aside className="w-full md:w-1/4">
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle>{user.name}</CardTitle>
-                <CardDescription>@{user.username}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <EditSeekerProfileDialog user={user} />
-            </CardContent>
-          </Card>
-        </aside>
-        <main className="w-full md:w-3/4">
+        <main className="w-full">
           <div className="space-y-4 mb-8">
             <h1 className="text-3xl font-bold font-headline">
               Find a Professional in {user.city}
@@ -124,7 +106,6 @@ export default function Dashboard() {
             </div>
           )}
         </main>
-      </div>
     </div>
   );
 }
