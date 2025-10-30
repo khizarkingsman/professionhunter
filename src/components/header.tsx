@@ -67,7 +67,7 @@ export function Header() {
                             </Avatar>
                             <div className="flex flex-col">
                                 <span className="font-semibold text-sm">{user.name}</span>
-                                <span className="text-xs text-muted-foreground">@{user.username}</span>
+                                <span className="text-xs text-muted-foreground">{user.username}</span>
                             </div>
                         </div>
                         {user.role === 'seeker' && <EditSeekerProfileDialog user={user} />}

@@ -27,7 +27,7 @@ export function WorkerCard({worker}: WorkerCardProps) {
           </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow">
-          <CardTitle className="text-lg font-headline mb-2">@{worker.username}</CardTitle>
+          <CardTitle className="text-lg font-headline mb-2">{worker.username}</CardTitle>
           <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
             <Badge variant="outline">{worker.profession}</Badge>
             {worker.avgRating && (

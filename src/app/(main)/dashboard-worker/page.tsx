@@ -100,7 +100,7 @@ export default function WorkerDashboardPage() {
         </Avatar>
         <div>
           <h1 className="text-3xl font-bold font-headline">
-            Welcome, {worker.name} (@{worker.username})
+            Welcome, {worker.name} ({worker.username})
           </h1>
           <p className="text-muted-foreground">Here&apos;s your dashboard.</p>
         </div>
@@ -128,7 +128,7 @@ export default function WorkerDashboardPage() {
                 <div>
                   <CardTitle className="font-headline text-2xl">{worker.name}</CardTitle>
                   <CardDescription>
-                    @{worker.username} &middot; {worker.profession}
+                    {worker.username} &middot; {worker.profession}
                   </CardDescription>
                 </div>
                 <EditProfileDialog worker={worker} />
@@ -246,7 +246,7 @@ export default function WorkerDashboardPage() {
                       </Avatar>
                       <div className="flex-1 truncate">
                         <p className="font-semibold">{otherUser.name}</p>
-                        <p className="text-sm text-muted-foreground">@{otherUser.username}</p>
+                        <p className="text-sm text-muted-foreground">{otherUser.username}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Phone className="w-3 h-3"/>
                             <span>{otherUser.phone}</span>

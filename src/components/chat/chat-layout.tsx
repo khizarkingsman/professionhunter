@@ -126,7 +126,7 @@ export default function ChatLayout({
         <div className="flex-1">
           <p className="font-semibold">{otherUser.name}</p>
           <p className="text-sm text-muted-foreground">
-            @{otherUser.username} &middot;{' '}
+            {otherUser.username} &middot;{' '}
             {otherUser.role === 'worker' ? otherUser.profession : 'Service Seeker'}
           </p>
         </div>

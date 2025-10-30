@@ -106,7 +106,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                 />
               </div>
               <h1 className="text-3xl font-bold font-headline">{worker.name}</h1>
-              <p className="text-muted-foreground mb-2">@{worker.username}</p>
+              <p className="text-muted-foreground mb-2">{worker.username}</p>
               <p className="text-lg text-primary font-semibold">{worker.profession}</p>
               <div className="flex items-center gap-2 mt-2">
                 <StarRating rating={averageRating} />
@@ -168,7 +168,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <p className="font-semibold">@{seeker?.username || review.seekerName}</p>
+                              <p className="font-semibold">{seeker?.username || review.seekerName}</p>
                               <p className="text-xs text-muted-foreground">{review.createdAt}</p>
                             </div>
                             <StarRating rating={review.rating} className="my-1" />
