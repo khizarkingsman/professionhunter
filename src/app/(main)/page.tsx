@@ -24,7 +24,7 @@ export default function Home() {
               Connect with Skilled Workers
             </h1>
             <p className="mx-auto max-w-[700px] text-lg md:text-xl">
-              ProConnect helps you find trusted local professionals for any job, big or small.
+              Profession Hunter helps you find trusted local professionals for any job, big or small.
             </p>
           </div>
         </div>

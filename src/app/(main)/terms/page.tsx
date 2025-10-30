@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
         <div className="space-y-6 text-muted-foreground">
           <section className="space-y-2">
             <h2 className="text-2xl font-bold font-headline text-foreground">1. Introduction</h2>
-            <p>Welcome to HandyConnect ("we", "us", or "our"). These Terms of Service govern your use of our website and mobile application (collectively, the "Service"). By accessing or using our Service, you agree to be bound by these terms.</p>
+            <p>Welcome to Profession Hunter ("we", "us", or "our"). These Terms of Service govern your use of our website and mobile application (collectively, the "Service"). By accessing or using our Service, you agree to be bound by these terms.</p>
           </section>
 
           <section className="space-y-2">
@@ -21,12 +21,12 @@ export default function TermsOfServicePage() {
 
           <section className="space-y-2">
             <h2 className="text-2xl font-bold font-headline text-foreground">3. User Conduct</h2>
-            <p>You agree not to use the Service to: (a) upload, post, email, transmit, or otherwise make available any content that is unlawful, harmful, threatening, abusive, harassing, tortious, defamatory, vulgar, obscene, libelous, invasive of another's privacy, hateful, or racially, ethnically, or otherwise objectionable; (b) harm minors in any way; (c) impersonate any person or entity, including, but not limited to, a HandyConnect official, forum leader, guide or host, or falsely state or otherwise misrepresent your affiliation with a person or entity.</p>
+            <p>You agree not to use the Service to: (a) upload, post, email, transmit, or otherwise make available any content that is unlawful, harmful, threatening, abusive, harassing, tortious, defamatory, vulgar, obscene, libelous, invasive of another's privacy, hateful, or racially, ethnically, or otherwise objectionable; (b) harm minors in any way; (c) impersonate any person or entity, including, but not limited to, a Profession Hunter official, forum leader, guide or host, or falsely state or otherwise misrepresent your affiliation with a person or entity.</p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-2xl font-bold font-headline text-foreground">4. Intellectual Property</h2>
-            <p>The Service and its original content, features, and functionality are and will remain the exclusive property of HandyConnect and its licensors. The Service is protected by copyright, trademark, and other laws of both the United States and foreign countries.</p>
+            <p>The Service and its original content, features, and functionality are and will remain the exclusive property of Profession Hunter and its licensors. The Service is protected by copyright, trademark, and other laws of both the United States and foreign countries.</p>
           </section>
 
           <section className="space-y-2">
@@ -36,7 +36,7 @@ export default function TermsOfServicePage() {
 
           <section className="space-y-2">
             <h2 className="text-2xl font-bold font-headline text-foreground">6. Limitation of Liability</h2>
-            <p>In no event shall HandyConnect, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
+            <p>In no event shall Profession Hunter, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
           </section>
 
           <section className="space-y-2">
@@ -51,7 +51,7 @@ export default function TermsOfServicePage() {
 
           <section className="space-y-2">
             <h2 className="text-2xl font-bold font-headline text-foreground">9. Contact Us</h2>
-            <p>If you have any questions about these Terms, please contact us at support@handyconnect.com.</p>
+            <p>If you have any questions about these Terms, please contact us at support@professionhunter.com.</p>
           </section>
         </div>
       </div>

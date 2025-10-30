@@ -13,7 +13,7 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ProConnect',
+  title: 'Profession Hunter',
   description: 'Connect with skilled workers in your area.',
 };
 
