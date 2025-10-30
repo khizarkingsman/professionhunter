@@ -111,19 +111,31 @@ export function AuthProvider({children}: {children: ReactNode}) {
   };
 
   const updateUser = (updatedUser: User) => {
+    // This is the in-memory update for the UI to react instantly.
     const newUsers = users.map(u => (u.id === updatedUser.id ? updatedUser : u));
     setUsers(newUsers);
-    localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+
+    // This is the part that saves to localStorage. We need to be careful with size.
+    // If the avatarUrl is a large base64 string, we should not save it back into the all-users list.
+    const userForStorage = { ...updatedUser };
+    if (userForStorage.avatarUrl && userForStorage.avatarUrl.startsWith('data:image')) {
+        // Replace the large base64 with a placeholder or original URL if we had one.
+        // For this app, we'll just not save the new base64 string in the main list
+        // to prevent exceeding quota. The in-memory state will still have it.
+        const { avatarUrl, ...restOfUser } = userForStorage;
+        const usersForStorage = users.map(u => (u.id === updatedUser.id ? restOfUser : u));
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(usersForStorage));
+    } else {
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+    }
+
 
     if (user?.id === updatedUser.id) {
       setUser(updatedUser);
-      // To prevent quota errors, don't store the potentially large avatarUrl in the current user session storage.
-      // It will be loaded from the 'all-users' storage on next page load anyway.
+      // Also update the current user session storage, but without the large image data
+      // to avoid quota errors there as well.
       const userForSessionStorage = { ...updatedUser };
       if (userForSessionStorage.avatarUrl && userForSessionStorage.avatarUrl.startsWith('data:image')) {
-        // We can't remove it completely or the UI will think it's gone. 
-        // We'll replace it with a short placeholder, but a better approach is to not store large data here.
-        // For now, we will store the object without it to avoid the crash.
         const { avatarUrl, ...rehydratedUser } = userForSessionStorage;
         localStorage.setItem('handy-connect-user', JSON.stringify(rehydratedUser));
       } else {
