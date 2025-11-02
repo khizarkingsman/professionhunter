@@ -124,9 +124,17 @@ export function AuthProvider({children}: {children: ReactNode}) {
         // to prevent exceeding quota. The in-memory state will still have it.
         const { avatarUrl, ...restOfUser } = userForStorage;
         const usersForStorage = users.map(u => (u.id === updatedUser.id ? restOfUser : u));
-        localStorage.setItem('handy-connect-all-users', JSON.stringify(usersForStorage));
+        try {
+            localStorage.setItem('handy-connect-all-users', JSON.stringify(usersForStorage));
+        } catch (e) {
+            console.error("Failed to set item in localStorage", e);
+        }
     } else {
-        localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+        try {
+            localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
+        } catch (e) {
+            console.error("Failed to set item in localStorage", e);
+        }
     }
 
 
