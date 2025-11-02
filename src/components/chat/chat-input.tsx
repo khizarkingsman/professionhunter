@@ -4,20 +4,14 @@
 import {useState, useRef} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Send, Camera, Bot, Loader2} from 'lucide-react';
+import {Send, Camera} from 'lucide-react';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '../ui/tooltip';
 
 interface ChatInputProps {
   onSendMessage: (text: string, file?: File) => void;
-  onGetSuggestion: () => void;
-  isGeneratingSuggestion: boolean;
 }
 
-export default function ChatInput({
-  onSendMessage,
-  onGetSuggestion,
-  isGeneratingSuggestion,
-}: ChatInputProps) {
+export default function ChatInput({onSendMessage}: ChatInputProps) {
   const [text, setText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,7 +22,7 @@ export default function ChatInput({
       setText('');
     }
   };
-  
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -40,33 +34,8 @@ export default function ChatInput({
     fileInputRef.current?.click();
   };
 
-
   return (
     <form onSubmit={handleSend} className="p-4 border-t bg-background flex items-center gap-2">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onGetSuggestion}
-              disabled={isGeneratingSuggestion}
-            >
-              {isGeneratingSuggestion ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Bot className="h-5 w-5" />
-              )}
-              <span className="sr-only">Get AI Suggestion</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Get AI suggestion</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
       <Input
         value={text}
         onChange={e => setText(e.target.value)}

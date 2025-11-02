@@ -24,15 +24,13 @@ export default function ChatLayout({
   chat: initialChat,
   currentUser,
   otherUser,
-  workerProfession,
   onNewMessage,
 }: ChatLayoutProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
-  const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
   const [notificationSent, setNotificationSent] = useState(false);
   const {user} = useAuth();
   const {toast} = useToast();
-  
+
   useEffect(() => {
     setMessages(initialChat.messages);
   }, [initialChat.messages]);
@@ -65,32 +63,6 @@ export default function ChatLayout({
     }
   };
 
-  const handleGetSuggestion = async () => {
-    // This is a placeholder for the AI suggestion logic.
-    setIsGeneratingSuggestion(true);
-    toast({
-      title: 'Getting AI Suggestion...',
-      description: 'Please wait a moment.',
-    });
-
-    // Simulate an API call
-    setTimeout(() => {
-      const suggestion: ChatMessage = {
-        id: `msg-ai-${Date.now()}`,
-        senderId: 'ai',
-        isAiSuggestion: true,
-        text: `Based on your conversation about ${workerProfession}, you could ask: "What are your rates for this kind of job?"`,
-        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
-      };
-      setMessages(prev => [...prev, suggestion]);
-      setIsGeneratingSuggestion(false);
-      toast({
-        title: 'Suggestion Ready!',
-        description: 'An AI-powered suggestion has been added to your chat.',
-      });
-    }, 2000);
-  };
-  
   const getBackLink = () => {
     if (!user) return '/';
     if (user.role === 'worker') {
@@ -123,11 +95,7 @@ export default function ChatLayout({
         </div>
       </div>
       <ChatMessages messages={messages} currentUser={currentUser} otherUser={otherUser} />
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        onGetSuggestion={handleGetSuggestion}
-        isGeneratingSuggestion={isGeneratingSuggestion}
-      />
+      <ChatInput onSendMessage={handleSendMessage} />
     </div>
   );
 }

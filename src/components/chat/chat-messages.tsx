@@ -2,8 +2,6 @@
 import type {ChatMessage, User} from '@/lib/data';
 import {cn} from '@/lib/utils';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Bot, Image as ImageIcon, Video} from 'lucide-react';
-import { Card, CardContent } from '../ui/card';
 import Image from 'next/image';
 
 interface ChatMessagesProps {
@@ -18,28 +16,6 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
       {messages.map(message => {
         const isCurrentUser = message.senderId === currentUser.id;
         const sender = isCurrentUser ? currentUser : otherUser;
-
-        if (message.isAiSuggestion) {
-          return (
-            <div key={message.id} className="flex items-start gap-3 justify-center my-6">
-               <Card className="max-w-2xl bg-accent border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary">
-                        <Bot className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <p className="font-semibold text-sm mb-1 text-accent-foreground">
-                        Helpful Suggestion
-                        </p>
-                        <p className="text-sm text-accent-foreground">{message.text}</p>
-                    </div>
-                  </div>
-                </CardContent>
-               </Card>
-            </div>
-          );
-        }
 
         const messageContent = (
           <>
