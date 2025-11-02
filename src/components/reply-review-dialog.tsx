@@ -1,3 +1,4 @@
+
 'use client';
 import {Button} from '@/components/ui/button';
 import {
@@ -15,9 +16,33 @@ import {Textarea} from '@/components/ui/textarea';
 import {Review} from '@/lib/data';
 import {MessageSquare} from 'lucide-react';
 import {useState} from 'react';
+import {useToast} from '@/hooks/use-toast';
 
-export default function ReplyReviewDialog({review}: {review: Review}) {
+interface ReplyReviewDialogProps {
+  review: Review;
+  onReplySubmit: (reviewId: string, replyText: string) => void;
+}
+
+export default function ReplyReviewDialog({review, onReplySubmit}: ReplyReviewDialogProps) {
   const [reply, setReply] = useState('');
+  const {toast} = useToast();
+
+  const handleSubmit = () => {
+    if (reply.trim()) {
+      onReplySubmit(review.id, reply);
+      toast({
+        title: 'Reply Sent!',
+        description: 'Your reply has been added to the review.',
+      });
+      setReply(''); // Reset after submitting
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Empty Reply',
+        description: 'Please write a reply before sending.',
+      });
+    }
+  };
 
   return (
     <Dialog>
@@ -45,7 +70,9 @@ export default function ReplyReviewDialog({review}: {review: Review}) {
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="submit">Send Reply</Button>
+            <Button type="submit" onClick={handleSubmit}>
+              Send Reply
+            </Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

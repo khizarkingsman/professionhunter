@@ -79,6 +79,17 @@ export default function WorkerDashboardPage() {
     localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
   };
   
+  const handleReplyToReview = (reviewId: string, replyText: string) => {
+    const updatedReviews = allReviews.map(review => {
+      if (review.id === reviewId) {
+        return {...review, reply: replyText};
+      }
+      return review;
+    });
+    setAllReviews(updatedReviews);
+    localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
+  };
+  
   const WhatsAppIcon = () => (
     <svg
       role="img"
@@ -198,7 +209,10 @@ export default function WorkerDashboardPage() {
                             </CardContent>
                           </Card>
                         ) : (
-                          <ReplyReviewDialog review={review} />
+                          <ReplyReviewDialog
+                            review={review}
+                            onReplySubmit={handleReplyToReview}
+                          />
                         )}
                         <Button
                           variant="outline"
