@@ -140,13 +140,19 @@ export default function SignupPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  placeholder="johndoe"
-                  required
-                  value={formData.username}
-                  onChange={handleChange}
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                    @
+                  </span>
+                  <Input
+                    id="username"
+                    placeholder="johndoe"
+                    required
+                    value={formData.username}
+                    onChange={handleChange}
+                    className="pl-7"
+                  />
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
