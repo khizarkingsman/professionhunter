@@ -6,5 +6,5 @@ const {next} = require('@genkit-ai/next');
 
 export const ai = genkit({
   plugins: [googleAI(), next()],
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash',
 });
