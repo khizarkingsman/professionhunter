@@ -3,7 +3,7 @@
 
 import {useState, useEffect} from 'react';
 import type {Chat, User, ChatMessage} from '@/lib/data';
-import {suggestHelpfulArticles} from '@/ai/flows/suggest-helpful-articles-in-chat';
+import {translateChat} from '@/ai/flows/translate-chat-flow';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import ChatMessages from './chat-messages';
 import ChatInput from './chat-input';
@@ -12,6 +12,14 @@ import {ChevronLeft} from 'lucide-react';
 import {Button} from '../ui/button';
 import {useAuth} from '@/context/auth-context';
 import {useToast} from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 
 interface ChatLayoutProps {
   chat: Chat;
@@ -21,16 +29,19 @@ interface ChatLayoutProps {
   onNewMessage: (message: ChatMessage) => void;
 }
 
+const supportedLanguages = ['English', 'Spanish', 'French', 'German', 'Portuguese', 'Italian'];
+
 export default function ChatLayout({
   chat: initialChat,
   currentUser,
   otherUser,
-  workerProfession,
   onNewMessage,
 }: ChatLayoutProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
-  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [notificationSent, setNotificationSent] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState('English');
+
   const {user} = useAuth();
   const {toast} = useToast();
   
@@ -56,7 +67,6 @@ export default function ChatLayout({
     setMessages(prev => [...prev, newMessage]);
     onNewMessage(newMessage);
 
-    // If the current user is a seeker sending a message to a worker, show a toast only once.
     if (currentUser.role === 'seeker' && otherUser.role === 'worker' && !notificationSent) {
       toast({
         title: 'Message Sent!',
@@ -66,35 +76,43 @@ export default function ChatLayout({
     }
   };
 
-  const handleGetSuggestion = async () => {
-    setIsLoadingSuggestion(true);
-    const chatHistory = messages
-      .map(m => {
-        const senderName = m.senderId === currentUser.id ? currentUser.name : otherUser.name;
-        return `${senderName}: ${m.text}`;
-      })
-      .join('\n');
+  const handleTranslateChat = async () => {
+    if (isTranslating) return;
+    setIsTranslating(true);
+    toast({
+      title: 'Translating...',
+      description: `Translating chat to ${targetLanguage}.`,
+    });
 
     try {
-      const result = await suggestHelpfulArticles({
-        chatHistory,
-        userProfession: workerProfession,
-      });
+      const translatedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          if (!msg.text || msg.isAiSuggestion) return msg;
 
-      if (result.suggestedArticleSnippet) {
-        const aiMessage: ChatMessage = {
-          id: `ai-${Date.now()}`,
-          senderId: 'ai',
-          text: result.suggestedArticleSnippet,
-          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
-          isAiSuggestion: true,
-        };
-        setMessages(prev => [...prev, aiMessage]);
-      }
+          try {
+            const result = await translateChat({
+              text: msg.text,
+              targetLanguage: targetLanguage,
+            });
+            return { ...msg, text: result.translatedText };
+          } catch (error) {
+            console.error('Error translating message:', msg.id, error);
+            // Return original message if translation fails for one message
+            return msg;
+          }
+        })
+      );
+      setMessages(translatedMessages);
+
     } catch (error) {
-      console.error('Error getting AI suggestion:', error);
+      console.error('Error translating chat:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Translation Failed',
+        description: 'Could not translate the chat at this time.',
+      });
     } finally {
-      setIsLoadingSuggestion(false);
+      setIsTranslating(false);
     }
   };
 
@@ -103,11 +121,9 @@ export default function ChatLayout({
     if (user.role === 'worker') {
       return '/dashboard-worker';
     }
-    // If the current user is a seeker, the "back" link should go to the other user's (the worker's) profile
     if (otherUser.role === 'worker') {
       return `/profile/${otherUser.id}`;
     }
-    // Fallback for seeker-seeker chat or other edge cases
     return '/dashboard';
   };
 
@@ -130,12 +146,26 @@ export default function ChatLayout({
             {otherUser.role === 'worker' ? otherUser.profession : 'Service Seeker'}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+           <Select value={targetLanguage} onValueChange={setTargetLanguage}>
+            <SelectTrigger className="w-auto md:w-[150px]">
+              <SelectValue placeholder="Translate to..." />
+            </SelectTrigger>
+            <SelectContent>
+              {supportedLanguages.map(lang => (
+                <SelectItem key={lang} value={lang}>
+                  {lang}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <ChatMessages messages={messages} currentUser={currentUser} otherUser={otherUser} />
       <ChatInput
         onSendMessage={handleSendMessage}
-        onGetSuggestion={handleGetSuggestion}
-        isLoadingSuggestion={isLoadingSuggestion}
+        onTranslateChat={handleTranslateChat}
+        isTranslating={isTranslating}
       />
     </div>
   );

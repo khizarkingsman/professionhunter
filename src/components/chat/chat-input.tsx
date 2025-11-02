@@ -4,19 +4,19 @@
 import {useState, useRef} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Send, Bot, Loader2, Camera} from 'lucide-react';
+import {Send, Languages, Loader2, Camera} from 'lucide-react';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '../ui/tooltip';
 
 interface ChatInputProps {
   onSendMessage: (text: string, file?: File) => void;
-  onGetSuggestion: () => void;
-  isLoadingSuggestion: boolean;
+  onTranslateChat: () => void;
+  isTranslating: boolean;
 }
 
 export default function ChatInput({
   onSendMessage,
-  onGetSuggestion,
-  isLoadingSuggestion,
+  onTranslateChat,
+  isTranslating,
 }: ChatInputProps) {
   const [text, setText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,19 +50,19 @@ export default function ChatInput({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={onGetSuggestion}
-              disabled={isLoadingSuggestion}
+              onClick={onTranslateChat}
+              disabled={isTranslating}
             >
-              {isLoadingSuggestion ? (
+              {isTranslating ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Bot className="h-5 w-5" />
+                <Languages className="h-5 w-5" />
               )}
-              <span className="sr-only">Get AI Suggestion</span>
+              <span className="sr-only">Translate Chat</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Get a helpful article snippet</p>
+            <p>Translate this conversation</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

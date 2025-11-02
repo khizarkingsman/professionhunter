@@ -105,9 +105,9 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
       ? loggedInUser
       : undefined;
 
-  if (!worker || !worker.profession) {
-    return <div className="text-center py-20">Could not identify a worker in this chat.</div>;
-  }
+  // We pass a dummy profession if no worker is identified.
+  const workerProfession = worker?.profession || 'general';
+
 
   return (
     <main className="h-screen flex flex-col">
@@ -115,7 +115,7 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
         chat={chat}
         currentUser={loggedInUser}
         otherUser={otherUser}
-        workerProfession={worker.profession}
+        workerProfession={workerProfession}
         onNewMessage={handleNewMessage}
       />
     </main>
