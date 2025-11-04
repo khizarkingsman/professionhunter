@@ -11,22 +11,18 @@ import {
 } from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {CheckCircle} from 'lucide-react';
-import {useToast} from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
+import { SubscriptionDialog } from './subscription-dialog';
 
 export default function SubscriptionCard() {
-  const {toast} = useToast();
   const { user, subscribeUser } = useAuth();
 
-  const handleSubscribe = () => {
-    subscribeUser();
-    toast({
-      title: 'Subscription Activated!',
-      description: 'You are now a Pro Worker. Enjoy the new benefits!',
-    });
-  };
+  if (!user || user.role !== 'worker') {
+    return null;
+  }
 
-  if (user?.isPro) {
+  if (user.isPro) {
+    const endDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate).toLocaleDateString() : 'N/A';
     return (
         <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
             <CardHeader>
@@ -34,7 +30,7 @@ export default function SubscriptionCard() {
                     <CheckCircle /> You are a Pro Worker!
                 </CardTitle>
                 <CardDescription className="text-green-100">
-                    You have access to all exclusive benefits.
+                    You have access to all exclusive benefits. Your subscription is valid until {endDate}.
                 </CardDescription>
             </CardHeader>
         </Card>
@@ -66,12 +62,7 @@ export default function SubscriptionCard() {
         </ul>
       </CardContent>
       <CardFooter>
-        <Button
-          className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-          onClick={handleSubscribe}
-        >
-          Subscribe Now
-        </Button>
+        <SubscriptionDialog onSubscribe={subscribeUser} />
       </CardFooter>
     </Card>
   );

@@ -33,6 +33,7 @@ export type User = {
   bio?: string;
   avgRating?: number;
   isPro?: boolean;
+  subscriptionEndDate?: string;
 };
 
 export type Review = {

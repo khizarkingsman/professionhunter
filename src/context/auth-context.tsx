@@ -38,9 +38,21 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
       const storedUser = localStorage.getItem('handy-connect-user');
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        const fullUser = allUsers.find(u => u.id === parsedUser.id);
-        setUser(fullUser || parsedUser);
+        const parsedUser: User = JSON.parse(storedUser);
+        let fullUser = allUsers.find(u => u.id === parsedUser.id) || parsedUser;
+
+        // Check subscription status
+        if (fullUser.role === 'worker' && fullUser.subscriptionEndDate) {
+          if (new Date(fullUser.subscriptionEndDate) < new Date()) {
+            console.log('Subscription expired for', fullUser.username);
+            fullUser = { ...fullUser, isPro: false, subscriptionEndDate: undefined };
+            // Persist this change
+            const updatedAllUsers = allUsers.map(u => u.id === fullUser.id ? { ...u, ...fullUser } : u);
+            localStorage.setItem('handy-connect-all-users', JSON.stringify(updatedAllUsers));
+            localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
+          }
+        }
+        setUser(fullUser);
       }
     } catch (error) {
       console.error('Failed to parse user from localStorage', error);
@@ -100,15 +112,23 @@ export function AuthProvider({children}: {children: ReactNode}) {
     });
 
     if (user?.id === updatedUser.id) {
-      setUser(updatedUser);
-      localStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
+      const {password: _p, ...userToSave} = {...(users.find(u => u.id === updatedUser.id) || {}), ...updatedUser};
+      setUser(userToSave);
+      localStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
     }
   };
 
   const subscribeUser = () => {
     if (user && user.role === 'worker') {
       const experience = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
-      const updatedUser = {...user, isPro: true, experience};
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
+      const updatedUser: User = {
+        ...user,
+        isPro: true,
+        experience,
+        subscriptionEndDate: subscriptionEndDate.toISOString(),
+      };
       updateUser(updatedUser);
     }
   };
