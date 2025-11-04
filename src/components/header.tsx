@@ -14,6 +14,7 @@ import {Menu, Wrench, LayoutDashboard, User, LogIn, UserPlus, LogOut} from 'luci
 import {useAuth} from '@/context/auth-context';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
 import { EditSeekerProfileDialog } from './edit-seeker-profile-dialog';
+import { ModeToggle } from './mode-toggle';
 
 const navLinks = [
   {href: '/dashboard', label: 'Find a Worker', icon: LayoutDashboard, roles: ['seeker']},
@@ -126,6 +127,7 @@ export function Header() {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2">
+           <ModeToggle />
           <nav className="hidden gap-2">
             {user ? (
               <>
