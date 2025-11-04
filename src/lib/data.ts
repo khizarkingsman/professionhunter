@@ -32,10 +32,11 @@ export type User = {
   experience?: number;
   bio?: string;
   avgRating?: number;
+  isPro?: boolean;
 };
 
 export type Review = {
-  id: string;
+  id:string;
   workerId: string;
   seekerId: string;
   seekerName: string;
@@ -80,6 +81,7 @@ export const users: User[] = [
     experience: 10,
     bio: 'Licensed plumber with 10 years of experience in residential and commercial plumbing. I specialize in emergency repairs and new installations. Customer satisfaction is my top priority.',
     avgRating: 4.8,
+    isPro: true,
   },
   {
     id: 'worker-2',
@@ -96,6 +98,7 @@ export const users: User[] = [
     experience: 7,
     bio: 'Certified electrician, skilled in all facets of electrical wiring, repairs, and system maintenance. Safety and quality are my guarantees.',
     avgRating: 4.9,
+    isPro: false,
   },
   {
     id: 'worker-3',
@@ -112,6 +115,7 @@ export const users: User[] = [
     experience: 20,
     bio: 'Master carpenter with a passion for creating custom furniture and built-ins. No job is too big or too small, from minor repairs to major renovations.',
     avgRating: 4.7,
+    isPro: true,
   },
   {
     id: 'worker-4',
@@ -128,6 +132,7 @@ export const users: User[] = [
     experience: 8,
     bio: 'Professional painter dedicated to transforming spaces with color. I offer interior and exterior painting services with a meticulous eye for detail.',
     avgRating: 5.0,
+    isPro: false,
   },
   {
     id: 'seeker-1',

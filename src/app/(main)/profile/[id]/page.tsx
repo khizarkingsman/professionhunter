@@ -9,7 +9,7 @@ import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
-import {Star, MessageCircle, Info, MapPin, Mail, Phone, Trash2} from 'lucide-react';
+import {Star, MessageCircle, Info, MapPin, Mail, Phone, Trash2, Award, Briefcase} from 'lucide-react';
 import ReviewForm from '@/components/review-form';
 import {useEffect, useState, use} from 'react';
 import {useAuth} from '@/context/auth-context';
@@ -104,6 +104,12 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                   className="object-cover"
                   data-ai-hint={`${worker.profession?.toLowerCase()} portrait`}
                 />
+                 {worker.isPro && (
+                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    <Award className="w-4 h-4" />
+                    <span>PRO</span>
+                  </div>
+                )}
               </div>
               <h1 className="text-3xl font-bold font-headline">{worker.name}</h1>
               <p className="text-muted-foreground mb-2">{worker.username}</p>
@@ -152,6 +158,11 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="text-primary" /> <strong>Phone:</strong> {worker.phone}
                 </div>
+                {worker.isPro && worker.experience && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Briefcase className="text-primary" /> <strong>Experience:</strong> {worker.experience} years
+                  </div>
+                )}
               </div>
               <Separator />
               <div>
