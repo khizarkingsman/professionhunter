@@ -25,6 +25,7 @@ import Link from 'next/link';
 import {useAuth} from '@/context/auth-context';
 import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
+import SubscriptionCard from '@/components/subscription-card';
 
 export default function WorkerDashboardPage() {
   const {user: worker, loading} = useAuth();
@@ -115,6 +116,10 @@ export default function WorkerDashboardPage() {
           </h1>
           <p className="text-muted-foreground">Here&apos;s your dashboard.</p>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <SubscriptionCard />
       </div>
 
       <Tabs defaultValue="profile">
