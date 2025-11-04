@@ -18,6 +18,7 @@ import {WorkerCard} from '@/components/worker-card';
 import {useAuth} from '@/context/auth-context';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {EditSeekerProfileDialog} from '@/components/edit-seeker-profile-dialog';
+import SubscriptionCardSeeker from '@/components/subscription-card-seeker';
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,12 +66,19 @@ export default function Dashboard() {
 
   const filteredWorkers = localWorkers.filter(worker => {
     const matchesProfession = selectedProfession === 'all' || worker.profession === selectedProfession;
+    // If user is not subscribed, filter out pro workers
+    if (!user.isSeekerPro) {
+        return matchesProfession && !worker.isPro;
+    }
     return matchesProfession;
   });
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
         <main className="w-full">
+         <div className="mb-8">
+            <SubscriptionCardSeeker />
+          </div>
           <div className="space-y-4 mb-8">
             <h1 className="text-3xl font-bold font-headline">
               Find a Professional in {user.city}
@@ -102,7 +110,12 @@ export default function Dashboard() {
           ) : (
             <div className="text-center py-16 text-card-foreground">
               <h2 className="text-xl font-semibold">No workers found</h2>
-              <p className="text-muted-foreground">Try adjusting your search or filter.</p>
+              <p className="text-muted-foreground">
+                { !user.isSeekerPro 
+                  ? "Some results may be hidden. Subscribe to Pro to see all workers."
+                  : "Try adjusting your search or filter."
+                }
+              </p>
             </div>
           )}
         </main>

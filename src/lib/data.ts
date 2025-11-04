@@ -34,6 +34,8 @@ export type User = {
   avgRating?: number;
   isPro?: boolean;
   subscriptionEndDate?: string;
+  isSeekerPro?: boolean;
+  seekerSubscriptionEndDate?: string;
 };
 
 export type Review = {

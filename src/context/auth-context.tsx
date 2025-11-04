@@ -14,6 +14,7 @@ interface AuthContextType {
   signup: (newUser: User, password: string) => User | null;
   updateUser: (updatedUser: User) => void;
   subscribeUser: () => void;
+  subscribeSeeker: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,20 +39,30 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
       const storedUser = localStorage.getItem('handy-connect-user');
       if (storedUser) {
-        const parsedUser: User = JSON.parse(storedUser);
+        let parsedUser: User = JSON.parse(storedUser);
         let fullUser = allUsers.find(u => u.id === parsedUser.id) || parsedUser;
 
-        // Check subscription status
+        // Check worker subscription status
         if (fullUser.role === 'worker' && fullUser.subscriptionEndDate) {
           if (new Date(fullUser.subscriptionEndDate) < new Date()) {
-            console.log('Subscription expired for', fullUser.username);
+            console.log('Worker subscription expired for', fullUser.username);
             fullUser = { ...fullUser, isPro: false, subscriptionEndDate: undefined };
-            // Persist this change
-            const updatedAllUsers = allUsers.map(u => u.id === fullUser.id ? { ...u, ...fullUser } : u);
-            localStorage.setItem('handy-connect-all-users', JSON.stringify(updatedAllUsers));
-            localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
           }
         }
+        
+        // Check seeker subscription status
+        if (fullUser.role === 'seeker' && fullUser.seekerSubscriptionEndDate) {
+          if (new Date(fullUser.seekerSubscriptionEndDate) < new Date()) {
+             console.log('Seeker subscription expired for', fullUser.username);
+            fullUser = { ...fullUser, isSeekerPro: false, seekerSubscriptionEndDate: undefined };
+          }
+        }
+        
+        // Persist any changes from expiration checks
+        const updatedAllUsers = allUsers.map(u => u.id === fullUser.id ? { ...u, ...fullUser } : u);
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(updatedAllUsers));
+        localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
+
         setUser(fullUser);
       }
     } catch (error) {
@@ -88,7 +99,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
       return null;
     }
 
-    const userWithPassword: UserWithPassword = {...newUser, password, isPro: false};
+    const userWithPassword: UserWithPassword = {...newUser, password, isPro: false, isSeekerPro: false};
     const newUsers = [...users, userWithPassword];
     setUsers(newUsers);
     localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
@@ -112,7 +123,8 @@ export function AuthProvider({children}: {children: ReactNode}) {
     });
 
     if (user?.id === updatedUser.id) {
-      const {password: _p, ...userToSave} = {...(users.find(u => u.id === updatedUser.id) || {}), ...updatedUser};
+      const fullUserRecord = users.find(u => u.id === updatedUser.id);
+      const {password: _p, ...userToSave} = {...fullUserRecord, ...updatedUser};
       setUser(userToSave);
       localStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
     }
@@ -132,10 +144,23 @@ export function AuthProvider({children}: {children: ReactNode}) {
       updateUser(updatedUser);
     }
   };
+  
+  const subscribeSeeker = () => {
+    if (user && user.role === 'seeker') {
+      const seekerSubscriptionEndDate = new Date();
+      seekerSubscriptionEndDate.setDate(seekerSubscriptionEndDate.getDate() + 15);
+      const updatedUser: User = {
+        ...user,
+        isSeekerPro: true,
+        seekerSubscriptionEndDate: seekerSubscriptionEndDate.toISOString(),
+      };
+      updateUser(updatedUser);
+    }
+  };
 
 
   return (
-    <AuthContext.Provider value={{user, loading, login, logout, signup, updateUser, subscribeUser}}>
+    <AuthContext.Provider value={{user, loading, login, logout, signup, updateUser, subscribeUser, subscribeSeeker}}>
       {children}
     </AuthContext.Provider>
   );
