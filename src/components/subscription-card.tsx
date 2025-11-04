@@ -46,7 +46,7 @@ export default function SubscriptionCard() {
       <CardHeader>
         <CardTitle className="text-2xl font-headline">Become a Pro Worker</CardTitle>
         <CardDescription className="text-primary-foreground/80">
-          Get recognized by service seekers, show off your badge and experience.
+          Elevate your profile with a Pro badge and highlight your experience to attract more clients.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
