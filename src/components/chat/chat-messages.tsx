@@ -43,7 +43,10 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
                   href={message.text}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 underline text-blue-500"
+                  className={cn('flex items-center gap-2 underline', {
+                    'text-primary-foreground': isCurrentUser,
+                    'text-blue-500': !isCurrentUser,
+                  })}
                 >
                   <MapPin className="w-4 h-4" />
                   View Location
