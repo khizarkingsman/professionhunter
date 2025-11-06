@@ -47,7 +47,7 @@ export default function SubscriptionCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-baseline">
-          <span className="text-4xl font-bold">$8</span>
+          <span className="text-4xl font-bold">$9</span>
           <span className="text-lg text-primary-foreground/80">/month</span>
         </div>
         <ul className="space-y-2 text-sm">

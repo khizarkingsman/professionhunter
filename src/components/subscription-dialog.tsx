@@ -83,7 +83,7 @@ export function SubscriptionDialog({ onSubscribe }: SubscriptionDialogProps) {
         <DialogHeader>
           <DialogTitle>Complete Your Subscription</DialogTitle>
           <DialogDescription>
-            Enter your card details to become a Pro Worker for $8/month.
+            Enter your card details to become a Pro Worker for $9/month.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -113,7 +113,7 @@ export function SubscriptionDialog({ onSubscribe }: SubscriptionDialogProps) {
         </div>
         <DialogFooter>
           <Button onClick={handlePayment} className="w-full">
-            Pay $8.00
+            Pay $9.00
           </Button>
         </DialogFooter>
       </DialogContent>
