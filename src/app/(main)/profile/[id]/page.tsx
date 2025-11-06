@@ -96,7 +96,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
         <Card>
           <CardContent className="p-6 md:p-8 grid md:grid-cols-3 gap-8">
             <div className="md:col-span-1 flex flex-col items-center text-center">
-              <div className="relative w-48 h-40 rounded-lg overflow-hidden border-4 border-card shadow-lg mb-4">
+              <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-card shadow-lg mb-4">
                 <Image
                   src={worker.avatarUrl}
                   alt={worker.name}
