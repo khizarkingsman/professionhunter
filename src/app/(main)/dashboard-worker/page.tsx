@@ -114,7 +114,7 @@ export default function WorkerDashboardPage() {
           <h1 className="text-3xl font-bold font-headline">
             Welcome, {worker.name} ({worker.username})
           </h1>
-          <p className="text-muted-foreground">Here&apos;s your dashboard.</p>
+          <p className="text-muted-foreground">Manage your profile, reviews, and client communications.</p>
         </div>
       </div>
 
@@ -315,3 +315,5 @@ export default function WorkerDashboardPage() {
     </div>
   );
 }
+
+    
