@@ -53,11 +53,11 @@ export default function SubscriptionCard() {
         <ul className="space-y-2 text-sm">
           <li className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Green "Pro" badge on your profile
+            Display a "Pro" badge on your profile
           </li>
           <li className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Get more recognition from service seekers
+            Increase your visibility with service seekers
           </li>
         </ul>
       </CardContent>
