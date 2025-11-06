@@ -28,18 +28,15 @@ export function EditSeekerProfileDialog({user}: {user: User}) {
     let updatedUser = {...user};
 
     if (photo) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        updatedUser = {...updatedUser, avatarUrl: base64String};
-        updateUser(updatedUser);
-        toast({
-          title: 'Profile Updated',
-          description: 'Your profile has been successfully saved.',
-        });
-      };
-      reader.readAsDataURL(photo);
+      const avatarUrl = URL.createObjectURL(photo);
+      updatedUser = {...updatedUser, avatarUrl};
     }
+    
+    updateUser(updatedUser);
+    toast({
+      title: 'Profile Updated',
+      description: 'Your profile has been successfully saved.',
+    });
   };
 
   return (
