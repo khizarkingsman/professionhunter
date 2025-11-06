@@ -46,9 +46,15 @@ export default function SubscriptionCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-baseline">
-          <span className="text-4xl font-bold">$9</span>
-          <span className="text-lg text-primary-foreground/80">/month</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-baseline">
+            <span className="text-4xl font-bold">$9</span>
+            <span className="text-lg text-primary-foreground/80">/month</span>
+          </div>
+          <div className="text-lg">
+            <span className="line-through text-primary-foreground/70">$15</span>
+            <span className="font-bold text-yellow-300 ml-2">40% OFF</span>
+          </div>
         </div>
         <ul className="space-y-2 text-sm">
           <li className="flex items-center gap-2">
