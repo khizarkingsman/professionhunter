@@ -3,6 +3,8 @@ import type {ChatMessage, User} from '@/lib/data';
 import {cn} from '@/lib/utils';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
+import {MapPin} from 'lucide-react';
+import Link from 'next/link';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -11,6 +13,10 @@ interface ChatMessagesProps {
 }
 
 export default function ChatMessages({messages, currentUser, otherUser}: ChatMessagesProps) {
+  const isLocationLink = (text: string) => {
+    return text.startsWith('https://www.google.com/maps?q=');
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map(message => {
@@ -31,7 +37,20 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
             {message.file?.url && message.file.type.startsWith('video/') && (
               <video src={message.file.url} controls className="rounded-lg max-w-xs" />
             )}
-            {message.text && <p className="text-sm">{message.text}</p>}
+            {message.text &&
+              (isLocationLink(message.text) ? (
+                <Link
+                  href={message.text}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 underline text-blue-500"
+                >
+                  <MapPin className="w-4 h-4" />
+                  View Location
+                </Link>
+              ) : (
+                <p className="text-sm">{message.text}</p>
+              ))}
             <p
               className={cn('text-xs mt-1 text-right', {
                 'text-primary-foreground/70': isCurrentUser,
