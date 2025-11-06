@@ -124,9 +124,11 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     if (user?.id === updatedUser.id) {
       const fullUserRecord = users.find(u => u.id === updatedUser.id);
-      const {password: _p, ...userToSave} = {...fullUserRecord, ...updatedUser};
-      setUser(userToSave);
-      localStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
+      const userToSave = { ...fullUserRecord, ...updatedUser };
+      // Omit password before saving to state and localStorage
+      const { password, ...rest } = userToSave;
+      setUser(rest as User);
+      localStorage.setItem('handy-connect-user', JSON.stringify(rest));
     }
   };
 

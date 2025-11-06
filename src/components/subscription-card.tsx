@@ -49,7 +49,7 @@ export default function SubscriptionCard() {
         <div className="flex items-center gap-4">
           <div className="flex items-baseline">
             <span className="text-4xl font-bold">$9</span>
-            <span className="text-lg text-primary-foreground/80">/month</span>
+            <span className="text-lg text-primary-foreground/80">/30 days</span>
           </div>
           <div className="text-lg">
             <span className="line-through text-primary-foreground/70">$15</span>
