@@ -20,7 +20,7 @@ const navLinks = [
   {href: '/dashboard', label: 'Find a Worker', icon: LayoutDashboard, roles: ['seeker']},
   {
     href: '/dashboard-worker',
-    label: 'Worker Dashboard',
+    label: 'My Dashboard',
     icon: User,
     roles: ['worker'],
   },
