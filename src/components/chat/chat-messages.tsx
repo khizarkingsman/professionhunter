@@ -1,15 +1,49 @@
 
+'use client';
+
+import { useRef, useState } from 'react';
 import type {ChatMessage, User} from '@/lib/data';
 import {cn} from '@/lib/utils';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
-import {MapPin} from 'lucide-react';
+import {MapPin, Play, Pause} from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '../ui/button';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
   currentUser: User;
   otherUser: User;
+}
+
+function AudioPlayer({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+  
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <audio ref={audioRef} src={src} onEnded={handleAudioEnded} preload="none" />
+      <Button variant="ghost" size="icon" onClick={togglePlay} className="h-8 w-8">
+        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+      </Button>
+       <div className="text-sm">Voice Message</div>
+    </div>
+  );
 }
 
 export default function ChatMessages({messages, currentUser, otherUser}: ChatMessagesProps) {
@@ -38,7 +72,7 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
               <video src={message.file.url} controls className="rounded-lg max-w-xs" />
             )}
              {message.file?.url && message.file.type.startsWith('audio/') && (
-              <audio src={message.file.url} controls className="w-full max-w-xs" />
+              <AudioPlayer src={message.file.url} />
             )}
             {message.text &&
               (isLocationLink(message.text) ? (
