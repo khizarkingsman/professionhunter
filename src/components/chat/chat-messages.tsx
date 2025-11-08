@@ -37,6 +37,9 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
             {message.file?.url && message.file.type.startsWith('video/') && (
               <video src={message.file.url} controls className="rounded-lg max-w-xs" />
             )}
+             {message.file?.url && message.file.type.startsWith('audio/') && (
+              <audio src={message.file.url} controls className="w-full max-w-xs" />
+            )}
             {message.text &&
               (isLocationLink(message.text) ? (
                 <Link
