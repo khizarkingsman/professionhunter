@@ -1,7 +1,7 @@
 
 'use client';
 
-import {useState, useRef} from 'react';
+import {useState, useRef, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Send, Camera, MapPin, Mic, StopCircle} from 'lucide-react';
@@ -17,7 +17,18 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isAudioSupported, setIsAudioSupported] = useState(false);
   const {toast} = useToast();
+
+  useEffect(() => {
+    if (
+      navigator.mediaDevices &&
+      navigator.mediaDevices.getUserMedia &&
+      window.MediaRecorder
+    ) {
+      setIsAudioSupported(true);
+    }
+  }, []);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +76,15 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
   };
 
   const handleMicClick = async () => {
+    if (!isAudioSupported) {
+       toast({
+        variant: 'destructive',
+        title: 'Voice messages not supported',
+        description: 'Your browser does not support audio recording.',
+      });
+      return;
+    }
+    
     if (isRecording) {
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
@@ -145,13 +165,17 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" onClick={handleMicClick}>
+            <Button type="button" variant="ghost" size="icon" onClick={handleMicClick} disabled={!isAudioSupported}>
                {isRecording ? <StopCircle className="h-5 w-5 text-red-500" /> : <Mic className="h-5 w-5" />}
               <span className="sr-only">{isRecording ? 'Stop Recording' : 'Record Voice Message'}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{isRecording ? 'Stop Recording' : 'Record Voice Message'}</p>
+             {!isAudioSupported ? (
+              <p>Voice messages not supported on this browser</p>
+            ) : (
+              <p>{isRecording ? 'Stop Recording' : 'Record Voice Message'}</p>
+            )}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
