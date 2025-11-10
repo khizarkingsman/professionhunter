@@ -84,15 +84,17 @@ export default function ChatLayout({
             <ChevronLeft />
           </Link>
         </Button>
-        <Avatar className="mr-4">
+        <Avatar className="mr-4 relative">
           <AvatarImage src={otherUser.avatarUrl} alt={otherUser.name} />
           <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
+           {otherUser.lastSeen === 'online' && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+            )}
         </Avatar>
         <div className="flex-1">
           <p className="font-semibold">{otherUser.name}</p>
           <p className="text-sm text-muted-foreground">
-            {otherUser.username} &middot;{' '}
-            {otherUser.role === 'worker' ? otherUser.profession : 'Service Seeker'}
+            {otherUser.lastSeen}
           </p>
         </div>
       </div>

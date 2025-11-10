@@ -36,6 +36,7 @@ export type User = {
   subscriptionEndDate?: string;
   isSeekerPro?: boolean;
   seekerSubscriptionEndDate?: string;
+  lastSeen?: string;
 };
 
 export type Review = {
@@ -85,6 +86,7 @@ export const users: User[] = [
     bio: 'Licensed plumber with 10 years of experience in residential and commercial plumbing. I specialize in emergency repairs and new installations. Customer satisfaction is my top priority.',
     avgRating: 4.8,
     isPro: true,
+    lastSeen: 'last seen yesterday at 10:30 PM',
   },
   {
     id: 'worker-2',
@@ -102,6 +104,7 @@ export const users: User[] = [
     bio: 'Certified electrician, skilled in all facets of electrical wiring, repairs, and system maintenance. Safety and quality are my guarantees.',
     avgRating: 4.9,
     isPro: false,
+    lastSeen: 'online',
   },
   {
     id: 'worker-3',
@@ -119,6 +122,7 @@ export const users: User[] = [
     bio: 'Master carpenter with a passion for creating custom furniture and built-ins. No job is too big or too small, from minor repairs to major renovations.',
     avgRating: 4.7,
     isPro: true,
+    lastSeen: 'last seen 2 hours ago',
   },
   {
     id: 'worker-4',
@@ -136,6 +140,7 @@ export const users: User[] = [
     bio: 'Professional painter dedicated to transforming spaces with color. I offer interior and exterior painting services with a meticulous eye for detail.',
     avgRating: 5.0,
     isPro: false,
+    lastSeen: 'online',
   },
   {
     id: 'seeker-1',
@@ -148,6 +153,7 @@ export const users: User[] = [
     age: 45,
     phone: '+12345678905',
     avatarUrl: 'https://picsum.photos/seed/seeker1/400/400',
+    lastSeen: 'last seen 5 minutes ago',
   },
   {
     id: 'seeker-2',
@@ -160,6 +166,7 @@ export const users: User[] = [
     age: 50,
     phone: '+12345678906',
     avatarUrl: 'https://picsum.photos/seed/seeker2/400/400',
+    lastSeen: 'last seen today at 3:15 PM',
   },
 ];
 

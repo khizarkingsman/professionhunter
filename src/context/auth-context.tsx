@@ -24,6 +24,19 @@ export function AuthProvider({children}: {children: ReactNode}) {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserWithPassword[]>([]);
 
+  // Helper function to update a user in the main users array and save to localStorage
+  const updateAllUsers = (updatedUser: Partial<UserWithPassword>) => {
+    let newAllUsers: UserWithPassword[] = [];
+    setUsers(prevAllUsers => {
+        newAllUsers = prevAllUsers.map(u => 
+            u.id === updatedUser.id ? { ...u, ...updatedUser } : u
+        );
+        localStorage.setItem('handy-connect-all-users', JSON.stringify(newAllUsers));
+        return newAllUsers;
+    });
+    return newAllUsers;
+  };
+
   useEffect(() => {
     setLoading(true);
     try {
@@ -80,7 +93,11 @@ export function AuthProvider({children}: {children: ReactNode}) {
     );
 
     if (foundUser) {
-      const {password: _p, ...userToSave} = foundUser;
+      const userWithOnlineStatus = { ...foundUser, lastSeen: 'online' };
+      const {password: _p, ...userToSave} = userWithOnlineStatus;
+      
+      updateAllUsers(userWithOnlineStatus);
+      
       setUser(userToSave);
       localStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
       return userToSave;
@@ -89,6 +106,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
   };
 
   const logout = () => {
+    if (user) {
+        const lastSeenTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        updateAllUsers({ ...user, lastSeen: `last seen today at ${lastSeenTime}` });
+    }
     setUser(null);
     localStorage.removeItem('handy-connect-user');
   };
@@ -99,7 +120,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
       return null;
     }
 
-    const userWithPassword: UserWithPassword = {...newUser, password, isPro: false, isSeekerPro: false};
+    const userWithPassword: UserWithPassword = {...newUser, password, isPro: false, isSeekerPro: false, lastSeen: 'online'};
     const newUsers = [...users, userWithPassword];
     setUsers(newUsers);
     localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
@@ -111,22 +132,13 @@ export function AuthProvider({children}: {children: ReactNode}) {
   };
 
   const updateUser = (updatedUser: User) => {
-    setUsers(prevUsers => {
-      const newUsers = prevUsers.map(u => {
-        if (u.id === updatedUser.id) {
-          return {...u, ...updatedUser};
-        }
-        return u;
-      });
-      localStorage.setItem('handy-connect-all-users', JSON.stringify(newUsers));
-      return newUsers;
-    });
+    const newUsers = updateAllUsers(updatedUser);
 
     if (user?.id === updatedUser.id) {
-      const fullUserRecord = users.find(u => u.id === updatedUser.id);
+      // Find the full record to ensure password isn't lost from the main state
+      const fullUserRecord = newUsers.find(u => u.id === updatedUser.id);
       const userToSave = { ...fullUserRecord, ...updatedUser };
-      // Omit password before saving to state and localStorage
-      const { password, ...rest } = userToSave;
+      const { password, ...rest } = userToSave; // Omit password for client-side storage
       setUser(rest as User);
       localStorage.setItem('handy-connect-user', JSON.stringify(rest));
     }
