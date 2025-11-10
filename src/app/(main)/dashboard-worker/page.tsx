@@ -134,7 +134,7 @@ export default function WorkerDashboardPage() {
           </TabsTrigger>
           <TabsTrigger value="chats">
             <MessageSquare className="mr-2 h-4 w-4" />
-            Conversations
+            Client Chat
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
