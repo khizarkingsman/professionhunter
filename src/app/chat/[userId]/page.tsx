@@ -67,6 +67,28 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
     });
   };
 
+  const handleDeleteMessage = (messageId: string) => {
+    setAllChats(prevChats => {
+      const chatIndex = prevChats.findIndex(
+        c => c.participants.includes(loggedInUser!.id) && c.participants.includes(otherUserId)
+      );
+
+      if (chatIndex === -1) return prevChats;
+
+      const updatedChats = [...prevChats];
+      const chatToUpdate = { ...updatedChats[chatIndex] };
+      
+      chatToUpdate.messages = chatToUpdate.messages.filter(
+        (msg) => msg.id !== messageId
+      );
+      
+      updatedChats[chatIndex] = chatToUpdate;
+
+      localStorage.setItem('handy-connect-all-chats', JSON.stringify(updatedChats));
+      return updatedChats;
+    });
+  };
+
   React.useEffect(() => {
     if (!loading && !loggedInUser) {
       router.push('/login');
@@ -117,6 +139,7 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
         otherUser={otherUser}
         workerProfession={workerProfession}
         onNewMessage={handleNewMessage}
+        onDeleteMessage={handleDeleteMessage}
       />
     </main>
   );

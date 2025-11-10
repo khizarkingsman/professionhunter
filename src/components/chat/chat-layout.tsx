@@ -18,6 +18,7 @@ interface ChatLayoutProps {
   otherUser: User;
   workerProfession: string;
   onNewMessage: (message: ChatMessage) => void;
+  onDeleteMessage: (messageId: string) => void;
 }
 
 export default function ChatLayout({
@@ -25,6 +26,7 @@ export default function ChatLayout({
   currentUser,
   otherUser,
   onNewMessage,
+  onDeleteMessage
 }: ChatLayoutProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat.messages);
   const [notificationSent, setNotificationSent] = useState(false);
@@ -94,7 +96,7 @@ export default function ChatLayout({
           </p>
         </div>
       </div>
-      <ChatMessages messages={messages} currentUser={currentUser} otherUser={otherUser} />
+      <ChatMessages messages={messages} currentUser={currentUser} otherUser={otherUser} onDeleteMessage={onDeleteMessage} />
       <ChatInput onSendMessage={handleSendMessage} />
     </div>
   );

@@ -6,7 +6,7 @@ import type {ChatMessage, User} from '@/lib/data';
 import {cn} from '@/lib/utils';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
-import {MapPin, Play, Pause} from 'lucide-react';
+import {MapPin, Play, Pause, Trash2} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
@@ -71,9 +71,13 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
   };
 
   return (
-    <div className="flex items-center gap-3 w-64">
+    <div className="flex items-center gap-2 w-64">
+       <Avatar className="h-10 w-10">
+          <AvatarImage src={sender.avatarUrl} alt={sender.name} />
+          <AvatarFallback>{sender.name.charAt(0)}</AvatarFallback>
+      </Avatar>
       <audio ref={audioRef} src={src} preload="metadata" />
-      <Button variant="ghost" size="icon" onClick={togglePlay} className={cn("h-10 w-10 shrink-0 rounded-full", isCurrentUser ? "bg-white/20 hover:bg-white/30" : "bg-muted-foreground/20 hover:bg-muted-foreground/30")}>
+      <Button variant="ghost" size="icon" onClick={togglePlay} className={cn("h-10 w-10 shrink-0 rounded-full", isCurrentUser ? "bg-primary/90 text-primary-foreground hover:bg-primary" : "bg-muted hover:bg-muted/80")}>
         {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
       </Button>
       <div className="flex-grow flex flex-col gap-1">
@@ -82,9 +86,9 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
           max={duration}
           step={1}
           onValueChange={handleSliderChange}
-          className={cn("[&>span:first-child]:h-1 [&>span>span]:h-1 [&>span>span]:bg-white", !isCurrentUser && "[&>span>span]:bg-primary")}
+          className={cn("[&>span:first-child]:h-1 [&>span>span]:h-1", isCurrentUser ? "[&>span>span]:bg-primary-foreground" : "[&>span>span]:bg-primary")}
         />
-        <div className="text-xs text-right">
+        <div className={cn("text-xs text-right", isCurrentUser ? "text-primary-foreground/80" : "text-muted-foreground")}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>
@@ -92,14 +96,20 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
   );
 }
 
+interface ChatMessagesProps {
+  messages: ChatMessage[];
+  currentUser: User;
+  otherUser: User;
+  onDeleteMessage: (messageId: string) => void;
+}
 
-export default function ChatMessages({messages, currentUser, otherUser}: ChatMessagesProps) {
+export default function ChatMessages({messages, currentUser, otherUser, onDeleteMessage}: ChatMessagesProps) {
   const isLocationLink = (text: string) => {
     return text.startsWith('https://www.google.com/maps?q=');
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-4 space-y-2">
       {messages.map(message => {
         const isCurrentUser = message.senderId === currentUser.id;
         const sender = isCurrentUser ? currentUser : otherUser;
@@ -152,10 +162,16 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
         return (
           <div
             key={message.id}
-            className={cn('flex items-end gap-3', {
+            className={cn('flex items-end gap-3 group/message', {
               'justify-end': isCurrentUser,
             })}
           >
+             {isCurrentUser && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-0 group-hover/message:opacity-100 transition-opacity" onClick={() => onDeleteMessage(message.id)}>
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                </Button>
+            )}
             {!isCurrentUser && (
               <Avatar className="h-8 w-8">
                 <AvatarImage src={sender.avatarUrl} alt={sender.name} />
@@ -166,6 +182,7 @@ export default function ChatMessages({messages, currentUser, otherUser}: ChatMes
               className={cn('max-w-md p-3 rounded-lg', {
                 'bg-primary text-primary-foreground': isCurrentUser,
                 'bg-card border': !isCurrentUser,
+                'p-2': message.file?.type.startsWith('audio/')
               })}
             >
               {messageContent}
