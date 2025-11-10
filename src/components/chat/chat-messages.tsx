@@ -10,6 +10,7 @@ import {MapPin, Play, Pause, Trash2} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
+import { useToast } from '@/hooks/use-toast';
 
 interface AudioPlayerProps {
   src: string;
@@ -22,6 +23,7 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -45,14 +47,25 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
     }
   }, []);
   
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        try {
+          await audioRef.current.play();
+          setIsPlaying(true);
+        } catch (error) {
+          console.error("Audio playback failed:", error);
+          toast({
+            variant: "destructive",
+            title: "Playback Error",
+            description: "Could not play audio. The operation is not supported on your browser.",
+          });
+          setIsPlaying(false);
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
