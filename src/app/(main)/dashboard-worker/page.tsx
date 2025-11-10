@@ -130,11 +130,11 @@ export default function WorkerDashboardPage() {
           </TabsTrigger>
           <TabsTrigger value="reviews">
             <Star className="mr-2 h-4 w-4" />
-            Reviews
+            Client Reviews
           </TabsTrigger>
           <TabsTrigger value="chats">
             <MessageSquare className="mr-2 h-4 w-4" />
-            Chats
+            Conversations
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
@@ -176,7 +176,7 @@ export default function WorkerDashboardPage() {
         <TabsContent value="reviews" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Your Reviews</CardTitle>
+              <CardTitle>Client Reviews</CardTitle>
               <CardDescription>See what customers are saying about your work.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
