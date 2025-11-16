@@ -27,7 +27,7 @@ export default function SubscriptionCardSeeker() {
         <Card className="bg-gradient-to-br from-amber-500 to-yellow-500 text-white shadow-lg">
             <CardHeader>
                 <CardTitle  className="text-2xl font-headline flex items-center gap-2">
-                    <Crown /> You are a Pro Seeker!
+                    <Crown /> Pro Seeker Membership
                 </CardTitle>
                 <CardDescription className="text-amber-100">
                     You have access to all Pro workers. Your subscription is valid until {endDate}.
