@@ -1,0 +1,62 @@
+type User @table {
+  displayName: String!
+  email: String!
+  userType: String!
+  createdAt: Timestamp!
+  phoneNumber: String
+  profilePictureUrl: String
+  location: String
+}
+
+type Service @table {
+  name: String!
+  description: String!
+  category: String!
+  createdAt: Timestamp!
+  defaultPrice: Float
+  estimatedDuration: Int
+}
+
+type WorkerProfile @table {
+  user: User!
+  bio: String!
+  yearsOfExperience: Int!
+  hourlyRate: Float!
+  portfolioUrl: String
+  certifications: [String]
+}
+
+type WorkerService @table(key: ["workerProfile", "service"]) {
+  workerProfile: WorkerProfile!
+  service: Service!
+  price: Float!
+  isActive: Boolean!
+  customDescription: String
+  estimatedCompletionTime: Int
+}
+
+type Booking @table {
+  workerProfile: WorkerProfile!
+  serviceSeeker: User!
+  # WorkerServiceRef is not directly referenced as it is a composite key.
+  # Instead, the individual components are referenced to define the specific service offered by the worker.
+  workerServiceProfile: WorkerProfile!
+  workerServiceService: Service!
+  bookingDate: Date!
+  startTime: String!
+  endTime: String!
+  status: String!
+  totalPrice: Float!
+  createdAt: Timestamp!
+  notesForWorker: String
+  notesForSeeker: String
+}
+
+type Review @table {
+  booking: Booking!
+  serviceSeeker: User!
+  workerProfile: WorkerProfile!
+  rating: Int!
+  createdAt: Timestamp!
+  comment: String
+}

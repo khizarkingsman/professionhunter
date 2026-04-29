@@ -1,0 +1,40 @@
+mutation CreateUser @auth(level: USER) {
+  user_insert(data: {
+    displayName: "New User",
+    email: "newuser@example.com",
+    userType: "seeker"
+  })
+}
+
+query ListServices @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  services {
+    id
+    name
+    description
+    defaultPrice
+  }
+}
+
+query GetWorkerProfile($id: UUID!) @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  workerProfile(id: $id) {
+    id
+    bio
+    hourlyRate
+    yearsOfExperience
+  }
+}
+
+mutation CreateBooking($workerProfileId: UUID!, $workerServiceServiceId: UUID!, $bookingDate: Date!, $startTime: String!, $endTime: String!, $totalPrice: Float!) @auth(level: USER) {
+  booking_insert(data: {
+    workerProfileId: $workerProfileId,
+    workerServiceServiceId: $workerServiceServiceId,
+    bookingDate: $bookingDate,
+    startTime: $startTime,
+    endTime: $endTime,
+    totalPrice: $totalPrice,
+    serviceSeekerId_expr: "auth.uid",
+    workerServiceProfileId: $workerProfileId,
+    createdAt_expr: "request.time",
+    status: "pending"
+  })
+}
