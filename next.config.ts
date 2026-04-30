@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    missingSuspenseWithCSRBailout: false,
   },
   images: {
     remotePatterns: [

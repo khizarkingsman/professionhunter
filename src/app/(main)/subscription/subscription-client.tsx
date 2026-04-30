@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useMemo} from 'react';
+import {useState, useMemo, useEffect} from 'react';
 import {useAuth} from '@/context/auth-context';
 import {useRouter} from 'next/navigation';
 import {useToast} from '@/hooks/use-toast';
@@ -57,20 +57,30 @@ function getPaymentHistory(user: any) {
 }
 
 export default function SubscriptionClient() {
-  const {user, updateUser, subscribeUser, subscribeSeeker} = useAuth();
+  const {user, loading, updateUser, subscribeUser, subscribeSeeker} = useAuth();
   const router = useRouter();
   const {toast} = useToast();
   const [cancelling, setCancelling] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  // Memoize payment history at the top to ensure hooks are called unconditionally
+  const paymentHistory = useMemo(() => getPaymentHistory(user), [user]);
 
-  if (user.role === 'store') {
-    router.push('/dashboard-store');
-    return null;
+  // Handle redirection in useEffect to avoid "cannot update while rendering" errors
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (user?.role === 'store') {
+      router.push('/dashboard-store');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user || user.role === 'store') {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading or redirecting...</p>
+      </div>
+    );
   }
 
   const isWorker = user.role === 'worker';
@@ -84,7 +94,6 @@ export default function SubscriptionClient() {
   const endDate = endDateStr ? new Date(endDateStr) : null;
   const daysLeft = endDate ? Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
 
-  const paymentHistory = useMemo(() => getPaymentHistory(user), [user]);
   const lastPayment = paymentHistory[0];
 
   const handleCancel = () => {
