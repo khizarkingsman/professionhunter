@@ -1,5 +1,7 @@
 'use client';
 
+import {useState, useEffect} from 'react';
+
 import Link from 'next/link';
 import {Button} from './ui/button';
 import {
@@ -32,6 +34,11 @@ const authLinks = [
 export function Header() {
   const {user, logout} = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getVisibleNavLinks = () => {
     if (!user) return [];
@@ -66,7 +73,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header suppressHydrationWarning className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <Sheet>
           <SheetTrigger asChild>
@@ -152,9 +159,9 @@ export function Header() {
           </Link>
         </div>
 
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex flex-1 items-center justify-end space-x-2" suppressHydrationWarning>
            <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-            <SelectTrigger className="w-[130px] h-9 border-none bg-transparent hover:bg-accent focus:ring-0">
+            <SelectTrigger suppressHydrationWarning className="w-[130px] h-9 border-none bg-transparent hover:bg-accent focus:ring-0">
               <div className="flex items-center gap-2">
                 <Languages className="h-4 w-4" />
                 <SelectValue placeholder="Language" />
