@@ -4,7 +4,7 @@ import Image from 'next/image';
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
-import {Star, Award, MapPin} from 'lucide-react';
+import {Star, Award, MapPin, ShieldCheck, XCircle} from 'lucide-react';
 import type {User} from '@/lib/data';
 import {getCityLabel, getNeighborhoodLabel} from '@/lib/locations';
 
@@ -25,12 +25,26 @@ export function WorkerCard({worker}: WorkerCardProps) {
               className="object-cover rounded-full shadow-sm group-hover:scale-105 transition-transform duration-300"
               data-ai-hint={`${worker.profession?.toLowerCase()} portrait`}
             />
-             {worker.isPro && (
-              <div className="absolute -top-1 -right-1 z-10 flex items-center gap-0.5 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
-                <Award className="w-3 h-3" />
-                <span>PRO</span>
-              </div>
-            )}
+            <div className="absolute -top-1 -right-1 z-10 flex flex-col gap-1 items-end">
+              {worker.isPro && (
+                <div className="flex items-center gap-0.5 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+                  <Award className="w-3 h-3" />
+                  <span>PRO</span>
+                </div>
+              )}
+              {worker.isVerified && worker.isPro && (
+                <div className="flex items-center gap-0.5 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>VERIFIED</span>
+                </div>
+              )}
+              {worker.iqamaStatus === 'approved' && !worker.isPro && (
+                <div className="flex items-center gap-0.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+                  <XCircle className="w-3 h-3" />
+                  <span>UNVERIFIED</span>
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-4 pt-0 flex-grow text-center flex flex-col items-center">

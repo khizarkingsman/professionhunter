@@ -35,7 +35,7 @@ export default function LoginPage() {
     if (loggedInUser) {
       toast({title: 'Login Successful', description: `Welcome back, ${loggedInUser.name}!`});
       const targetDashboard =
-        loggedInUser.role === 'worker' ? '/dashboard-worker' : loggedInUser.role === 'store' ? '/dashboard-store' : '/dashboard';
+        loggedInUser.role === 'admin' ? '/admin' : loggedInUser.role === 'worker' ? '/dashboard-worker' : loggedInUser.role === 'store' ? '/dashboard-store' : '/dashboard';
       router.push(targetDashboard);
     } else {
       toast({

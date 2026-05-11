@@ -27,6 +27,7 @@ import {useRouter} from 'next/navigation';
 import SubscriptionCard from '@/components/subscription-card';
 import {useLanguage} from '@/context/language-context';
 import {WorkerTracker} from '@/components/worker-tracker';
+import {IqamaVerificationDialog} from '@/components/iqama-verification-dialog';
 
 export default function DashboardWorkerClient() {
   const {user: worker, loading} = useAuth();
@@ -123,6 +124,7 @@ export default function DashboardWorkerClient() {
       <div className="mb-8 space-y-4">
         <WorkerTracker />
         <SubscriptionCard />
+        <IqamaVerificationDialog />
       </div>
 
       <Tabs defaultValue="profile">

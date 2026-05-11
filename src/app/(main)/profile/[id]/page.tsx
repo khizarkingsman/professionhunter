@@ -9,7 +9,7 @@ import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
-import {Star, MessageCircle, Info, MapPin, Mail, Phone, Trash2, Award, Briefcase} from 'lucide-react';
+import {Star, MessageCircle, Info, MapPin, Mail, Phone, Trash2, Award, Briefcase, ShieldCheck, XCircle} from 'lucide-react';
 import ReviewForm from '@/components/review-form';
 import {useEffect, useState, use} from 'react';
 import {useAuth} from '@/context/auth-context';
@@ -104,12 +104,26 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
                   className="object-cover"
                   data-ai-hint={`${worker.profession?.toLowerCase()} portrait`}
                 />
-                 {worker.isPro && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    <Award className="w-4 h-4" />
-                    <span>PRO</span>
-                  </div>
-                )}
+                <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                  {worker.isPro && (
+                    <div className="flex items-center gap-1 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                      <Award className="w-4 h-4" />
+                      <span>PRO</span>
+                    </div>
+                  )}
+                  {worker.isVerified && worker.isPro && (
+                    <div className="flex items-center gap-1 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>VERIFIED</span>
+                    </div>
+                  )}
+                  {worker.iqamaStatus === 'approved' && !worker.isPro && (
+                    <div className="flex items-center gap-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                      <XCircle className="w-4 h-4" />
+                      <span>UNVERIFIED</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <h1 className="text-3xl font-bold font-headline">{worker.name}</h1>
               <p className="text-muted-foreground mb-2">{worker.username}</p>

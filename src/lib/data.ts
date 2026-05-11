@@ -30,7 +30,7 @@ export type User = {
   id: string;
   name: string;
   username: string;
-  role: 'worker' | 'seeker' | 'store';
+  role: 'worker' | 'seeker' | 'store' | 'admin';
   email: string;
   country: string;
   city: string;
@@ -49,6 +49,17 @@ export type User = {
   lastSeen?: string;
   storeDocId?: string;
   paymentHistory?: PaymentHistoryEntry[];
+  // Iqama / Worker ID verification fields
+  iqamaNumber?: string;
+  iqamaImageUrl?: string; // Front of card
+  iqamaBackImageUrl?: string; // Back of card
+  iqamaStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  iqamaSubmittedAt?: string;
+  iqamaVerifiedAt?: string;
+  iqamaRejectionReason?: string;
+  isVerified?: boolean;
+  // Admin-granted subscription tracking
+  subscriptionGrantedBy?: string;
 };
 
 export type Review = {

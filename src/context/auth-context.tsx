@@ -7,6 +7,22 @@ import emailjs from '@emailjs/browser';
 
 type UserWithPassword = User & {password: string};
 
+// Admin seed account
+const ADMIN_ACCOUNT: UserWithPassword = {
+  id: 'admin-001',
+  name: 'Admin',
+  username: 'admin',
+  role: 'admin',
+  email: 'admin@professionhunter.com',
+  country: 'Saudi Arabia',
+  city: 'Riyadh',
+  age: 30,
+  phone: '+966500000000',
+  avatarUrl: 'https://placehold.co/100x100.png?text=A',
+  password: 'admin123',
+  lastSeen: 'online',
+};
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -18,6 +34,12 @@ interface AuthContextType {
   subscribeSeeker: (amount: string, method: string) => void;
   requestPasswordReset: (identifier: string) => Promise<string | null>;
   resetPassword: (identifier: string, newPassword: string) => boolean;
+  // Admin functions
+  getAllUsers: () => User[];
+  grantSubscription: (workerId: string, durationDays: number) => void;
+  revokeSubscription: (workerId: string) => void;
+  updateIqamaStatus: (workerId: string, status: 'approved' | 'rejected', reason?: string) => void;
+  submitIqama: (iqamaNumber: string, iqamaImageUrl: string, iqamaBackImageUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,8 +71,15 @@ export function AuthProvider({children}: {children: ReactNode}) {
         allUsers = JSON.parse(storedUsers);
       } else {
         allUsers = mockUsers.map(u => ({...u, password: 'password123'}));
-        localStorage.setItem('handy-connect-all-users', JSON.stringify(allUsers));
       }
+
+      // Ensure admin account always exists
+      const adminExists = allUsers.find(u => u.id === ADMIN_ACCOUNT.id);
+      if (!adminExists) {
+        allUsers = [...allUsers, ADMIN_ACCOUNT];
+      }
+
+      localStorage.setItem('handy-connect-all-users', JSON.stringify(allUsers));
       setUsers(allUsers);
 
       const storedUser = localStorage.getItem('handy-connect-user');
@@ -198,6 +227,90 @@ export function AuthProvider({children}: {children: ReactNode}) {
     }
   };
 
+  // --- Admin Functions ---
+
+  const getAllUsers = (): User[] => {
+    return users.map(({password: _p, ...rest}) => rest as User);
+  };
+
+  const grantSubscription = (workerId: string, durationDays: number) => {
+    const worker = users.find(u => u.id === workerId && u.role === 'worker');
+    if (!worker) return;
+
+    const subscriptionEndDate = new Date();
+    subscriptionEndDate.setDate(subscriptionEndDate.getDate() + durationDays);
+
+    const historyEntry = {
+      id: `pay-${Date.now()}`,
+      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+      amount: 'Admin Granted',
+      plan: 'Pro Worker',
+      method: 'Admin Grant',
+      status: 'paid' as const
+    };
+
+    const updatedWorker: UserWithPassword = {
+      ...worker,
+      isPro: true,
+      subscriptionEndDate: subscriptionEndDate.toISOString(),
+      subscriptionGrantedBy: 'admin',
+      paymentHistory: [...(worker.paymentHistory || []), historyEntry]
+    };
+
+    const newAllUsers = users.map(u => u.id === workerId ? updatedWorker : u);
+    setUsers(newAllUsers);
+    localStorage.setItem('handy-connect-all-users', JSON.stringify(newAllUsers));
+  };
+
+  const revokeSubscription = (workerId: string) => {
+    const worker = users.find(u => u.id === workerId && u.role === 'worker');
+    if (!worker) return;
+
+    const updatedWorker: UserWithPassword = {
+      ...worker,
+      isPro: false,
+      subscriptionEndDate: undefined,
+      subscriptionGrantedBy: undefined,
+    };
+
+    const newAllUsers = users.map(u => u.id === workerId ? updatedWorker : u);
+    setUsers(newAllUsers);
+    localStorage.setItem('handy-connect-all-users', JSON.stringify(newAllUsers));
+  };
+
+  const updateIqamaStatus = (workerId: string, status: 'approved' | 'rejected', reason?: string) => {
+    const worker = users.find(u => u.id === workerId && u.role === 'worker');
+    if (!worker) return;
+
+    const updatedWorker: UserWithPassword = {
+      ...worker,
+      iqamaStatus: status,
+      iqamaVerifiedAt: new Date().toISOString(),
+      isVerified: status === 'approved',
+      iqamaRejectionReason: status === 'rejected' ? reason : undefined,
+    };
+
+    const newAllUsers = users.map(u => u.id === workerId ? updatedWorker : u);
+    setUsers(newAllUsers);
+    localStorage.setItem('handy-connect-all-users', JSON.stringify(newAllUsers));
+  };
+
+  const submitIqama = (iqamaNumber: string, iqamaImageUrl: string, iqamaBackImageUrl: string) => {
+    if (!user || user.role !== 'worker') return;
+
+    const updatedUser: User = {
+      ...user,
+      iqamaNumber,
+      iqamaImageUrl,
+      iqamaBackImageUrl,
+      iqamaStatus: 'pending',
+      iqamaSubmittedAt: new Date().toISOString(),
+      iqamaRejectionReason: undefined,
+    };
+
+    updateUser(updatedUser);
+  };
+
   const requestPasswordReset = async (identifier: string): Promise<string | null> => {
     const ident = identifier.toLowerCase();
     const foundUser = users.find(
@@ -236,7 +349,11 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
 
   return (
-    <AuthContext.Provider value={{user, loading, login, logout, signup, updateUser, subscribeUser, subscribeSeeker, requestPasswordReset, resetPassword}}>
+    <AuthContext.Provider value={{
+      user, loading, login, logout, signup, updateUser, subscribeUser, subscribeSeeker,
+      requestPasswordReset, resetPassword,
+      getAllUsers, grantSubscription, revokeSubscription, updateIqamaStatus, submitIqama
+    }}>
       {children}
     </AuthContext.Provider>
   );

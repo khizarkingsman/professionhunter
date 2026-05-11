@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import {Menu, Wrench, LayoutDashboard, User, LogIn, UserPlus, LogOut, Languages, CreditCard, Store, MapPin} from 'lucide-react';
+import {Menu, Wrench, LayoutDashboard, User, LogIn, UserPlus, LogOut, Languages, CreditCard, Store, MapPin, Shield} from 'lucide-react';
 import {useAuth} from '@/context/auth-context';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
 import { EditSeekerProfileDialog } from './edit-seeker-profile-dialog';
@@ -34,10 +34,11 @@ const authLinks = [
 export function Header() {
   const {user, logout} = useAuth();
   const { language, setLanguage, t } = useLanguage();
-  const [mounted, setMounted] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setIsMounted(true);
   }, []);
 
   const getVisibleNavLinks = () => {
@@ -67,6 +68,12 @@ export function Header() {
         label: 'Subscription',
         icon: CreditCard,
         roles: ['worker', 'seeker'],
+      },
+      {
+        href: '/admin',
+        label: 'Admin Panel',
+        icon: Shield,
+        roles: ['admin'],
       },
     ];
     return links.filter(link => link.roles.includes(user.role));
@@ -160,25 +167,27 @@ export function Header() {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2" suppressHydrationWarning>
-           <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-            <SelectTrigger suppressHydrationWarning className="w-[130px] h-9 border-none bg-transparent hover:bg-accent focus:ring-0">
-              <div className="flex items-center gap-2">
-                <Languages className="h-4 w-4" />
-                <SelectValue placeholder="Language" />
-              </div>
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="ar">العربية السعودية (Saudi Arabic)</SelectItem>
-              <SelectItem value="ur">اردو (Urdu)</SelectItem>
-            </SelectContent>
-          </Select>
+           {isMounted && (
+             <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
+              <SelectTrigger suppressHydrationWarning className="w-[130px] h-9 border-none bg-transparent hover:bg-accent focus:ring-0">
+                <div className="flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  <SelectValue placeholder="Language" />
+                </div>
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="ar">العربية السعودية (Saudi Arabic)</SelectItem>
+                <SelectItem value="ur">اردو (Urdu)</SelectItem>
+              </SelectContent>
+            </Select>
+           )}
           <ModeToggle />
           <nav className="hidden gap-2 lg:flex">
             {user ? (
               <>
                 <Button variant="ghost" asChild>
-                   <Link href={user.role === 'worker' ? '/dashboard-worker' : user.role === 'store' ? '/dashboard-store' : '/dashboard'}>{t('dashboard')}</Link>
+                   <Link href={user.role === 'admin' ? '/admin' : user.role === 'worker' ? '/dashboard-worker' : user.role === 'store' ? '/dashboard-store' : '/dashboard'}>{t('dashboard')}</Link>
                 </Button>
                 {(user.role === 'worker' || user.role === 'seeker') && (
                   <Button variant="ghost" asChild>
