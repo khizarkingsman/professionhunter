@@ -12,8 +12,7 @@ import {
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {CreditCard, Lock, Smartphone, ShieldCheck, Loader2, CheckCircle2} from 'lucide-react';
+import {CreditCard, Lock, ShieldCheck, Loader2, CheckCircle2} from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 
 interface SaudiCheckoutProps {
@@ -26,7 +25,6 @@ interface SaudiCheckoutProps {
 
 export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: SaudiCheckoutProps) {
   const {toast} = useToast();
-  const [tab, setTab] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
@@ -36,9 +34,6 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
   const [cvv, setCvv] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [cardType, setCardType] = useState<'visa' | 'mastercard' | 'mada' | 'unknown'>('unknown');
-
-  // STC Pay State
-  const [phoneNumber, setPhoneNumber] = useState('');
 
   // Detect Card Type (Simple Logic for Saudi mada / Visa / MC)
   useEffect(() => {
@@ -63,16 +58,9 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
 
   const handlePayment = async () => {
     // Basic validation
-    if (tab === 'card') {
-      if (cardNumber.length < 16 || expiry.length < 5 || cvv.length < 3) {
-        toast({variant: 'destructive', title: 'Invalid Details', description: 'Please complete the card information.'});
-        return;
-      }
-    } else {
-      if (phoneNumber.length < 9) {
-        toast({variant: 'destructive', title: 'Invalid Phone', description: 'Please enter a valid Saudi phone number.'});
-        return;
-      }
+    if (cardNumber.length < 16 || expiry.length < 5 || cvv.length < 3) {
+      toast({variant: 'destructive', title: 'Invalid Details', description: 'Please complete the card information.'});
+      return;
     }
 
     setIsProcessing(true);
@@ -85,7 +73,7 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
 
     // Final Success Callback
     setTimeout(() => {
-      onSuccess(tab === 'card' ? (cardType === 'mada' ? 'mada card' : cardType.toUpperCase() + ' card') : 'STC Pay');
+      onSuccess(cardType === 'mada' ? 'mada card' : cardType.toUpperCase() + ' card');
       setIsDone(false);
       onClose();
     }, 1500);
@@ -112,17 +100,7 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
               </div>
             </div>
 
-            <Tabs defaultValue="card" className="w-full" onValueChange={setTab}>
-              <TabsList className="grid grid-cols-2 mx-6 mt-4">
-                <TabsTrigger value="card" className="gap-2">
-                  <CreditCard className="h-4 w-4" /> Card
-                </TabsTrigger>
-                <TabsTrigger value="stc" className="gap-2">
-                  <Smartphone className="h-4 w-4" /> Digital Wallet
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="card" className="p-6 pt-4 space-y-4">
+              <div className="p-6 pt-4 space-y-4 mt-2">
                 <div className="grid gap-2">
                   <Label htmlFor="cardNumber">Card Number</Label>
                   <div className="relative">
@@ -179,30 +157,7 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
                     onChange={e => setCardHolder(e.target.value)}
                   />
                 </div>
-              </TabsContent>
-
-              <TabsContent value="stc" className="p-6 pt-4 space-y-4 text-center">
-                 <div className="py-4 px-6 mb-4 rounded-xl bg-[#4F008C]/5 border border-[#4F008C]/20 flex flex-col items-center">
-                    <div className="text-2xl font-bold text-[#4F008C]">stc pay</div>
-                    <p className="text-xs text-muted-foreground mt-1 text-center">A verification code will be sent to your number</p>
-                 </div>
-                 
-                 <div className="grid gap-2 text-left">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <div className="flex gap-2">
-                        <span className="flex items-center justify-center px-3 bg-muted rounded-md text-sm">+966</span>
-                        <Input
-                          id="phone"
-                          placeholder="5XXXXXXXX"
-                          value={phoneNumber}
-                          onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                          maxLength={9}
-                          className="flex-1"
-                        />
-                    </div>
-                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
 
             <DialogFooter className="p-6 bg-muted/30 border-t mt-4">
               <div className="w-full flex flex-col gap-3">
