@@ -31,17 +31,17 @@ import {db} from '@/lib/firebase';
 import {collection, addDoc, serverTimestamp} from 'firebase/firestore';
 
 const storeCategories = [
-  {value: 'hardware', label: 'Hardware & Tools'},
-  {value: 'electrical', label: 'Electrical Supplies'},
-  {value: 'plumbing', label: 'Plumbing Supplies'},
-  {value: 'paint', label: 'Paint & Finishing'},
-  {value: 'building_materials', label: 'Building Materials'},
-  {value: 'safety', label: 'Safety Equipment'},
-  {value: 'garden', label: 'Garden & Outdoor'},
-  {value: 'cleaning', label: 'Cleaning Supplies'},
-  {value: 'automotive', label: 'Automotive Parts'},
-  {value: 'general', label: 'General Store'},
-  {value: 'other', label: 'Other'},
+  {value: 'hardware', labelKey: 'storeCat_hardware' as const},
+  {value: 'electrical', labelKey: 'storeCat_electrical' as const},
+  {value: 'plumbing', labelKey: 'storeCat_plumbing' as const},
+  {value: 'paint', labelKey: 'storeCat_paint' as const},
+  {value: 'building_materials', labelKey: 'storeCat_building_materials' as const},
+  {value: 'safety', labelKey: 'storeCat_safety' as const},
+  {value: 'garden', labelKey: 'storeCat_garden' as const},
+  {value: 'cleaning', labelKey: 'storeCat_cleaning' as const},
+  {value: 'automotive', labelKey: 'storeCat_automotive' as const},
+  {value: 'general', labelKey: 'storeCat_general' as const},
+  {value: 'other', labelKey: 'storeCat_other' as const},
 ];
 
 export default function SignupPage() {
@@ -134,8 +134,8 @@ export default function SignupPage() {
 
         if (registeredStore) {
           toast({
-            title: 'Store Registration Submitted!',
-            description: 'Your store application has been received and is pending approval.',
+            title: t('storePendingDesc'),
+            description: t('storePendingDesc'),
           });
           router.push('/dashboard-store');
         }
@@ -143,8 +143,8 @@ export default function SignupPage() {
         console.error('Error saving store to Firestore:', error);
         toast({
           variant: 'destructive',
-          title: 'Registration Failed',
-          description: 'Could not save your store. Please try again.',
+          title: t('error'),
+          description: t('storeUpdateError'),
         });
       } finally {
         setIsSubmitting(false);
@@ -178,8 +178,8 @@ export default function SignupPage() {
 
     if (registeredUser) {
       toast({
-        title: 'Account Created!',
-        description: "You've been successfully signed up.",
+        title: t('profileUpdated'),
+        description: t('profileSavedSuccess'),
       });
       const targetDashboard =
         registeredUser.role === 'worker' ? '/dashboard-worker' : '/dashboard';
@@ -187,8 +187,8 @@ export default function SignupPage() {
     } else {
       toast({
         variant: 'destructive',
-        title: 'Signup Failed',
-        description: 'An account with this email may already exist.',
+        title: t('error'),
+        description: t('sendOtpError'),
       });
     }
     setIsSubmitting(false);
@@ -222,7 +222,7 @@ export default function SignupPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="store" id="store" />
-                  <Label htmlFor="store">Store Owner</Label>
+                  <Label htmlFor="store">{t('storeOwner')}</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -231,35 +231,35 @@ export default function SignupPage() {
             {userType === 'store' && (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="storeName">Store Name</Label>
+                  <Label htmlFor="storeName">{t('storeName')}</Label>
                   <Input
                     id="storeName"
-                    placeholder="Al-Faisal Hardware"
+                    placeholder={t('storeNamePlaceholder')}
                     required
                     value={formData.storeName}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="storeAddress">Store Address</Label>
+                  <Label htmlFor="storeAddress">{t('storeAddress')}</Label>
                   <Input
                     id="storeAddress"
-                    placeholder="King Fahd Road, Al Olaya District"
+                    placeholder={t('storeAddressPlaceholder')}
                     required
                     value={formData.storeAddress}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="storeCategory">Store Category</Label>
+                  <Label htmlFor="storeCategory">{t('storeCategory')}</Label>
                   <Select onValueChange={handleStoreCategoryChange} value={formData.storeCategory}>
                     <SelectTrigger id="storeCategory">
-                      <SelectValue placeholder="Select Category" />
+                      <SelectValue placeholder={t('selectCategory')} />
                     </SelectTrigger>
                     <SelectContent>
                       {storeCategories.map(cat => (
                         <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
+                          {t(cat.labelKey as any)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -342,10 +342,10 @@ export default function SignupPage() {
             {/* === SHARED: CITY & NEIGHBORHOOD === */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="city">City (Saudi Arabia)</Label>
+                <Label htmlFor="city">{t('city')} ({t('saudiArabia')})</Label>
                 <Select onValueChange={handleCityChange} value={formData.city}>
                   <SelectTrigger id="city">
-                    <SelectValue placeholder="Select City" />
+                    <SelectValue placeholder={t('selectCity')} />
                   </SelectTrigger>
                   <SelectContent>
                     {saudiLocations.map(location => (
@@ -357,10 +357,10 @@ export default function SignupPage() {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="neighborhood">Neighborhood</Label>
+                <Label htmlFor="neighborhood">{t('neighborhood')}</Label>
                 <Select onValueChange={handleNeighborhoodChange} value={formData.neighborhood} disabled={!formData.city}>
                   <SelectTrigger id="neighborhood">
-                    <SelectValue placeholder="Select Neighborhood" />
+                    <SelectValue placeholder={t('selectNeighborhood')} />
                   </SelectTrigger>
                   <SelectContent>
                     {getNeighborhoodsForCity(formData.city).map(hood => (
@@ -392,12 +392,12 @@ export default function SignupPage() {
                   <Label htmlFor="profession">{t('profession')}</Label>
                   <Select onValueChange={handleSelectChange} value={formData.profession}>
                     <SelectTrigger id="profession">
-                      <SelectValue placeholder="Select your profession" />
+                      <SelectValue placeholder={t('selectProfession')} />
                     </SelectTrigger>
                     <SelectContent>
                       {professions.map(p => (
-                        <SelectItem key={p.name} value={p.name}>
-                          {p.name}
+                        <SelectItem key={p.name} value={p.name} disabled={p.isComingSoon}>
+                          {p.name}{p.isComingSoon ? ` (${t('comingSoon')})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -434,7 +434,7 @@ export default function SignupPage() {
             {/* === STORE OWNER: PASSWORD === */}
             {userType === 'store' && (
               <div className="grid gap-2 relative">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('password')}</Label>
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -457,7 +457,7 @@ export default function SignupPage() {
             )}
 
             <Button type="submit" className="w-full mt-4" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : userType === 'store' ? 'Register Store' : t('signup')}
+              {isSubmitting ? t('submitting') : userType === 'store' ? t('registerStore') : t('signup')}
             </Button>
 
             <div className="mt-4 text-center text-sm">

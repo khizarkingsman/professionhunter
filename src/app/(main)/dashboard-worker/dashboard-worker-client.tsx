@@ -4,6 +4,7 @@ import {
   chats as mockChats,
   reviews as mockReviews,
   users as mockUsers,
+  professions,
 } from '@/lib/data';
 import type { User, Review, Chat } from '@/lib/data';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
@@ -17,7 +18,8 @@ import {
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
-import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone, Trash2} from 'lucide-react';
+import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone, Trash2, Info} from 'lucide-react';
+import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
@@ -120,6 +122,16 @@ export default function DashboardWorkerClient() {
           <p className="text-muted-foreground">{t('manageProfile')}</p>
         </div>
       </div>
+
+      {worker.profession && professions.find(p => p.name === worker.profession)?.isComingSoon && (
+        <Alert className="mb-6 border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300">
+          <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="font-headline font-bold">{t('comingSoonAlertTitle')}</AlertTitle>
+          <AlertDescription>
+            {t('comingSoonAlertDesc')}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="mb-8 space-y-4">
         <WorkerTracker />

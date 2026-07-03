@@ -47,7 +47,7 @@ export function Header() {
       {href: '/dashboard', label: t('findWorker'), icon: LayoutDashboard, roles: ['seeker']},
       {
         href: '/live-map', 
-        label: 'Find Worker on Map', 
+        label: t('findWorkerOnMap'), 
         icon: MapPin, 
         roles: ['seeker']
       },
@@ -59,19 +59,19 @@ export function Header() {
       },
       {
         href: '/dashboard-store',
-        label: 'My Store',
+        label: t('myStore'),
         icon: Store,
         roles: ['store'],
       },
       {
         href: '/subscription',
-        label: 'Subscription',
+        label: t('subscription'),
         icon: CreditCard,
         roles: ['worker', 'seeker'],
       },
       {
         href: '/admin',
-        label: 'Admin Panel',
+        label: t('adminPanel'),
         icon: Shield,
         roles: ['admin'],
       },
@@ -191,7 +191,7 @@ export function Header() {
                 </Button>
                 {(user.role === 'worker' || user.role === 'seeker') && (
                   <Button variant="ghost" asChild>
-                    <Link href="/subscription">Subscription</Link>
+                    <Link href="/subscription">{t('subscription')}</Link>
                   </Button>
                 )}
                 <Button onClick={() => logout()}>

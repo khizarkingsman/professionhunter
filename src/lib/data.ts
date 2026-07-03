@@ -6,15 +6,16 @@ export type Profession = {
   name: string;
   description: string;
   icon: LucideIcon;
+  isComingSoon?: boolean;
 };
 
 export const professions: Profession[] = [
   {name: 'Plumber', description: 'Fixing leaks, installing pipes, and more.', icon: Wrench},
   {name: 'Electrician', description: 'Wiring, repairs, and electrical installations.', icon: Zap},
-  {name: 'Carpenter', description: 'Custom furniture, repairs, and woodwork.', icon: Hammer},
-  {name: 'Painter', description: 'Interior and exterior painting services.', icon: Paintbrush},
-  {name: 'Cleaner', description: 'Home and office cleaning services.', icon: Sparkles},
-  {name: 'Landscaper', description: 'Gardening, lawn care, and design.', icon: Sprout},
+  {name: 'Carpenter', description: 'Custom furniture, repairs, and woodwork.', icon: Hammer, isComingSoon: true},
+  {name: 'Painter', description: 'Interior and exterior painting services.', icon: Paintbrush, isComingSoon: true},
+  {name: 'Cleaner', description: 'Home and office cleaning services.', icon: Sparkles, isComingSoon: true},
+  {name: 'Landscaper', description: 'Gardening, lawn care, and design.', icon: Sprout, isComingSoon: true},
 ];
 
 export type PaymentHistoryEntry = {

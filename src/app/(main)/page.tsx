@@ -97,20 +97,43 @@ export default function Home() {
               const Icon = profession.icon;
               const nameKey = `prof_${profession.name}` as keyof typeof translations['en'];
               const descKey = `desc_${profession.name}` as keyof typeof translations['en'];
+              
+              if (profession.isComingSoon) {
+                return (
+                  <Card 
+                    key={profession.name} 
+                    className="relative flex h-full flex-col items-center justify-center p-6 text-center border-dashed opacity-80 bg-muted/20 select-none overflow-hidden"
+                  >
+                    <div className="absolute top-3 right-3">
+                      <span className="inline-flex items-center rounded-full bg-amber-500/10 dark:bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        {t('comingSoon')}
+                      </span>
+                    </div>
+                    <CardHeader>
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground mb-4">
+                        <Icon className="h-8 w-8 text-muted-foreground/60" />
+                      </div>
+                      <CardTitle className="font-headline text-muted-foreground">{t(nameKey as any)}</CardTitle>
+                    </CardHeader>
+                    <CardDescription className="text-muted-foreground/70">{t(descKey as any)}</CardDescription>
+                  </Card>
+                );
+              }
+
               return (
                 <Link
                   key={profession.name}
                   href={`/dashboard?profession=${encodeURIComponent(profession.name)}`}
                   className="group"
                 >
-                  <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-shadow duration-300 group-hover:shadow-xl">
+                  <Card className="profession-card flex h-full flex-col items-center justify-center p-6 text-center">
                     <CardHeader>
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                        <Icon className="h-8 w-8" />
+                      <div className="profession-icon-wrap mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+                        <Icon className="profession-icon h-8 w-8" />
                       </div>
-                      <CardTitle className="font-headline">{t(nameKey as any)}</CardTitle>
+                      <CardTitle className="profession-title font-headline">{t(nameKey as any)}</CardTitle>
                     </CardHeader>
-                    <CardDescription>{t(descKey as any)}</CardDescription>
+                    <CardDescription className="profession-desc">{t(descKey as any)}</CardDescription>
                   </Card>
                 </Link>
               );

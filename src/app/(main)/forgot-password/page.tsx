@@ -3,13 +3,13 @@
 import {useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+2:   Card,
+3:   CardContent,
+4:   CardDescription,
+5:   CardFooter,
+6:   CardHeader,
+7:   CardTitle,
+8: } from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Eye, EyeOff} from 'lucide-react';
@@ -17,6 +17,7 @@ import {useAuth} from '@/context/auth-context';
 import {useToast} from '@/hooks/use-toast';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import {useLanguage} from '@/context/language-context';
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1);
@@ -27,6 +28,7 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const {t} = useLanguage();
   
   const {requestPasswordReset, resetPassword} = useAuth();
   const {toast} = useToast();
@@ -34,7 +36,7 @@ export default function ForgotPasswordPage() {
 
   const handleSendResetEmail = async () => {
     if (!identifier.trim()) {
-       toast({variant: 'destructive', title: 'Error', description: 'Please enter a valid identifier.'});
+       toast({variant: 'destructive', title: t('error'), description: t('validIdentifierError')});
        return;
     }
 
@@ -45,8 +47,8 @@ export default function ForgotPasswordPage() {
     if (!returnedCode) {
       toast({
         variant: 'destructive',
-        title: 'User Not Found or Error',
-        description: 'Unable to send OTP email. Ensure the account exists.',
+        title: t('userNotFoundError'),
+        description: t('sendOtpError'),
       });
       return;
     }
@@ -54,8 +56,8 @@ export default function ForgotPasswordPage() {
     setGeneratedCode(returnedCode);
     setStep(2);
     toast({
-      title: 'Email Sent!',
-      description: `A 6-digit code has been dispatched to the account email securely via EmailJS.`,
+      title: t('emailSent'),
+      description: t('otpSentDesc'),
     });
   };
 
@@ -63,25 +65,25 @@ export default function ForgotPasswordPage() {
     if (code !== generatedCode) {
       toast({
         variant: 'destructive',
-        title: 'Invalid Code',
-        description: 'The verification code you entered is incorrect.',
+        title: t('invalidCode'),
+        description: t('invalidCodeDesc'),
       });
       return;
     }
     setStep(3);
-    toast({title: 'Verified!', description: 'Please choose a new password.'});
+    toast({title: t('verifiedSuccess'), description: t('chooseNewPasswordDesc')});
   };
 
   const handleResetPassword = () => {
     if (newPassword.length < 6) {
-        toast({variant: 'destructive', title: 'Too short', description: 'Password must be at least 6 characters.'});
+        toast({variant: 'destructive', title: t('tooShort'), description: t('passwordLengthError')});
         return;
     }
     if (newPassword !== confirmPassword) {
       toast({
         variant: 'destructive',
-        title: 'Mismatch',
-        description: 'Passwords do not match.',
+        title: t('mismatch'),
+        description: t('passwordMismatchError'),
       });
       return;
     }
@@ -89,12 +91,12 @@ export default function ForgotPasswordPage() {
     const success = resetPassword(identifier, newPassword);
     if (success) {
       toast({
-        title: 'Success!',
-        description: 'Your password has been successfully reset locally. Please log in.',
+        title: t('resetSuccess'),
+        description: t('resetSuccessDesc'),
       });
       router.push('/login');
     } else {
-        toast({variant: 'destructive', title: 'Error', description: 'Failed to reset password.'});
+        toast({variant: 'destructive', title: t('error'), description: t('resetPasswordErrorDesc')});
     }
   };
 
@@ -105,15 +107,15 @@ export default function ForgotPasswordPage() {
         {step === 1 && (
           <>
             <CardHeader>
-              <CardTitle className="text-2xl font-headline">Reset Password</CardTitle>
-              <CardDescription>Enter your email, username, or phone number to receive a 6-digit OTP code.</CardDescription>
+              <CardTitle className="text-2xl font-headline">{t('resetPassword')}</CardTitle>
+              <CardDescription>{t('forgotPasswordDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="identifier">Identifier</Label>
+                <Label htmlFor="identifier">{t('identifier')}</Label>
                 <Input
                   id="identifier"
-                  placeholder="Email, Username, or +966..."
+                  placeholder={t('identifierPlaceholder')}
                   value={identifier}
                   onChange={e => setIdentifier(e.target.value)}
                 />
@@ -121,10 +123,10 @@ export default function ForgotPasswordPage() {
             </CardContent>
             <CardFooter className="flex flex-col items-stretch gap-4">
               <Button className="w-full" onClick={handleSendResetEmail} disabled={isSending}>
-                {isSending ? 'Sending OTP Code...' : 'Send OTP via EmailJS'}
+                {isSending ? t('sendingOtp') : t('sendOtp')}
               </Button>
               <Link href="/login" className="text-center text-sm text-muted-foreground hover:underline">
-                 Back to Login
+                 {t('backToLogin')}
               </Link>
             </CardFooter>
           </>
@@ -133,12 +135,12 @@ export default function ForgotPasswordPage() {
         {step === 2 && (
           <>
             <CardHeader>
-              <CardTitle className="text-2xl font-headline">Verify OTP Code</CardTitle>
-              <CardDescription>Enter the 6-digit code we sent via EmailJS to your contact method.</CardDescription>
+              <CardTitle className="text-2xl font-headline">{t('verifyOtpCode')}</CardTitle>
+              <CardDescription>{t('verifyOtpDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="code">Verification Code</Label>
+                <Label htmlFor="code">{t('verificationCode')}</Label>
                 <Input
                   id="code"
                   maxLength={6}
@@ -150,8 +152,8 @@ export default function ForgotPasswordPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col items-stretch gap-4">
-              <Button className="w-full" onClick={handleVerifyCode}>Verify Account</Button>
-              <Button variant="ghost" className="w-full" onClick={() => setStep(1)}>Go Back</Button>
+              <Button className="w-full" onClick={handleVerifyCode}>{t('verifyAccount')}</Button>
+              <Button variant="ghost" className="w-full" onClick={() => setStep(1)}>{t('goBack')}</Button>
             </CardFooter>
           </>
         )}
@@ -159,12 +161,12 @@ export default function ForgotPasswordPage() {
         {step === 3 && (
           <>
             <CardHeader>
-              <CardTitle className="text-2xl font-headline">Create New Password</CardTitle>
-              <CardDescription>Your account has been verified. Choose a secure new password.</CardDescription>
+              <CardTitle className="text-2xl font-headline">{t('createNewPassword')}</CardTitle>
+              <CardDescription>{t('createNewPasswordDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-2 relative">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">{t('newPassword')}</Label>
                 <Input
                   id="newPassword"
                   type={showPassword ? 'text' : 'password'}
@@ -183,7 +185,7 @@ export default function ForgotPasswordPage() {
                 </Button>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   type={showPassword ? 'text' : 'password'}
@@ -194,7 +196,7 @@ export default function ForgotPasswordPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col items-stretch gap-4">
-              <Button className="w-full" onClick={handleResetPassword}>Save & Login</Button>
+              <Button className="w-full" onClick={handleResetPassword}>{t('saveLogin')}</Button>
             </CardFooter>
           </>
         )}

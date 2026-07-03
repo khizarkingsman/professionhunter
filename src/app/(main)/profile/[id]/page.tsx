@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import {reviews as mockReviews, users as mockUsers} from '@/lib/data';
+import {reviews as mockReviews, users as mockUsers, professions} from '@/lib/data';
 import type {Review, User} from '@/lib/data';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
@@ -74,8 +74,10 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
     localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
   };
 
-  if (!worker) {
-    return <div className="container text-center py-20">Worker not found.</div>;
+  const isComingSoon = professions.find(p => p.name === worker?.profession)?.isComingSoon;
+
+  if (!worker || isComingSoon) {
+    return <div className="container text-center py-20 font-headline text-lg">Worker profile is currently unavailable (service coming soon).</div>;
   }
 
   const WhatsAppIcon = () => (

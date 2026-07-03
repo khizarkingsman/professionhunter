@@ -79,6 +79,12 @@ export default function DashboardClient() {
   });
 
   const filteredWorkers = localWorkers.filter(worker => {
+    // Filter out workers whose profession is Coming Soon
+    const prof = professions.find(p => p.name === worker.profession);
+    if (prof?.isComingSoon) {
+      return false;
+    }
+
     const matchesProfession = selectedProfession === 'all' || worker.profession === selectedProfession;
     // If user is not subscribed, filter out pro workers
     if (!user.isSeekerPro) {
@@ -132,8 +138,8 @@ export default function DashboardClient() {
                   {professions.map(p => {
                     const nameKey = `prof_${p.name}` as any;
                     return (
-                      <SelectItem key={p.name} value={p.name}>
-                        {t(nameKey)}
+                      <SelectItem key={p.name} value={p.name} disabled={p.isComingSoon}>
+                        {t(nameKey)}{p.isComingSoon ? ` (${t('comingSoon')})` : ''}
                       </SelectItem>
                     );
                   })}

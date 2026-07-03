@@ -23,7 +23,7 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
   useEffect(() => {
     if (
       navigator.mediaDevices &&
-      navigator.mediaDevices.getUserMedia &&
+      typeof navigator.mediaDevices.getUserMedia === 'function' &&
       window.MediaRecorder
     ) {
       setIsAudioSupported(true);

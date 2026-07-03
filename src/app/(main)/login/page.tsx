@@ -33,15 +33,15 @@ export default function LoginPage() {
   const handleLogin = () => {
     const loggedInUser = login(identifier, password);
     if (loggedInUser) {
-      toast({title: 'Login Successful', description: `Welcome back, ${loggedInUser.name}!`});
+      toast({title: t('loginSuccessful'), description: t('welcomeBackUser').replace('{name}', loggedInUser.name)});
       const targetDashboard =
         loggedInUser.role === 'admin' ? '/admin' : loggedInUser.role === 'worker' ? '/dashboard-worker' : loggedInUser.role === 'store' ? '/dashboard-store' : '/dashboard';
       router.push(targetDashboard);
     } else {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Invalid email or password.',
+        title: t('loginFailed'),
+        description: t('invalidEmailPassword'),
       });
     }
   };
@@ -55,11 +55,11 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="identifier">Email, Username, or Phone Number</Label>
+            <Label htmlFor="identifier">{t('emailUsernamePhone')}</Label>
             <Input
               id="identifier"
               type="text"
-              placeholder="m@example.com or +966..."
+              placeholder={t('emailPlaceholder')}
               required
               value={identifier}
               onChange={e => setIdentifier(e.target.value)}
@@ -88,7 +88,7 @@ export default function LoginPage() {
           </div>
           <div className="text-right">
              <Link href="/forgot-password" className="text-sm text-muted-foreground hover:underline">
-               Forgot password?
+               {t('forgotPasswordLink')}
              </Link>
           </div>
         </CardContent>
