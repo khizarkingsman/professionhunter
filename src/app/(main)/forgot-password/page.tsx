@@ -1,23 +1,23 @@
 'use client';
 
-import {useState} from 'react';
-import {Button} from '@/components/ui/button';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-2:   Card,
-3:   CardContent,
-4:   CardDescription,
-5:   CardFooter,
-6:   CardHeader,
-7:   CardTitle,
-8: } from '@/components/ui/card';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {Eye, EyeOff} from 'lucide-react';
-import {useAuth} from '@/context/auth-context';
-import {useToast} from '@/hooks/use-toast';
-import {useRouter} from 'next/navigation';
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {useLanguage} from '@/context/language-context';
+import { useLanguage } from '@/context/language-context';
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1);
@@ -28,16 +28,16 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const {t} = useLanguage();
-  
-  const {requestPasswordReset, resetPassword} = useAuth();
-  const {toast} = useToast();
+  const { t } = useLanguage();
+
+  const { requestPasswordReset, resetPassword } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
 
   const handleSendResetEmail = async () => {
     if (!identifier.trim()) {
-       toast({variant: 'destructive', title: t('error'), description: t('validIdentifierError')});
-       return;
+      toast({ variant: 'destructive', title: t('error'), description: t('validIdentifierError') });
+      return;
     }
 
     setIsSending(true);
@@ -71,13 +71,13 @@ export default function ForgotPasswordPage() {
       return;
     }
     setStep(3);
-    toast({title: t('verifiedSuccess'), description: t('chooseNewPasswordDesc')});
+    toast({ title: t('verifiedSuccess'), description: t('chooseNewPasswordDesc') });
   };
 
   const handleResetPassword = () => {
     if (newPassword.length < 6) {
-        toast({variant: 'destructive', title: t('tooShort'), description: t('passwordLengthError')});
-        return;
+      toast({ variant: 'destructive', title: t('tooShort'), description: t('passwordLengthError') });
+      return;
     }
     if (newPassword !== confirmPassword) {
       toast({
@@ -96,14 +96,14 @@ export default function ForgotPasswordPage() {
       });
       router.push('/login');
     } else {
-        toast({variant: 'destructive', title: t('error'), description: t('resetPasswordErrorDesc')});
+      toast({ variant: 'destructive', title: t('error'), description: t('resetPasswordErrorDesc') });
     }
   };
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
-        
+
         {step === 1 && (
           <>
             <CardHeader>
@@ -126,7 +126,7 @@ export default function ForgotPasswordPage() {
                 {isSending ? t('sendingOtp') : t('sendOtp')}
               </Button>
               <Link href="/login" className="text-center text-sm text-muted-foreground hover:underline">
-                 {t('backToLogin')}
+                {t('backToLogin')}
               </Link>
             </CardFooter>
           </>
