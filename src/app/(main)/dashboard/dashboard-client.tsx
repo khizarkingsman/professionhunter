@@ -77,11 +77,18 @@ export default function DashboardClient() {
     }
 
     const matchesProfession = selectedProfession === 'all' || worker.profession === selectedProfession;
-    // If user is not subscribed, filter out pro workers
-    if (!user.isSeekerPro) {
-        return matchesProfession && !worker.isPro;
+    
+    // Explicit Paywall Logic:
+    if (user.isSeekerPro) {
+        // 1. Pro Seekers can view all workers (both Free and Pro)
+        return matchesProfession;
+    } else {
+        // 2. Free Seekers: Hide 'Pro Workers' behind the paywall, but successfully fetch Free Workers
+        if (worker.isPro) {
+            return false;
+        }
+        return matchesProfession;
     }
-    return matchesProfession;
   });
 
   return (

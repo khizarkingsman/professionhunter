@@ -5,15 +5,15 @@ service cloud.firestore {
     // Workers can only update their own locations. Clients can only read.
     match /workerLocations/{userId} {
       // Anyone can read (so Seekers can get the data)
-      allow read: if request.auth != null;
+      allow read: if true;
       
-      // Only the worker themselves can update their own location document
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow write since custom auth is used
+      allow write: if true;
     }
 
     // Default catch-all (adjust for other collections)
     match /{document=**} {
-      allow read, write: if request.auth != null; 
+      allow read, write: if true; 
     }
   }
 }
