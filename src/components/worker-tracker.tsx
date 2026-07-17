@@ -27,12 +27,17 @@ import {
 } from '@/components/ui/select';
 
 export function WorkerTracker() {
-  const {user} = useAuth();
+  const {user, updateUser} = useAuth();
   const {toast} = useToast();
   
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(user?.availabilityStatus === 'active');
   const [locationError, setLocationError] = useState<string | null>(null);
   const watcherRef = useRef<number | null>(null);
+
+  // Sync initial state if user context changes
+  useEffect(() => {
+    setIsActive(user?.availabilityStatus === 'active');
+  }, [user?.availabilityStatus]);
 
   // Inactive Modal State
   const [showInactiveModal, setShowInactiveModal] = useState(false);
@@ -68,6 +73,11 @@ export function WorkerTracker() {
           ...additionalData
         }, { merge: true });
         
+        // Also update the local user state so the dashboard client (and refresh) remembers
+        if (user.availabilityStatus !== (activeState ? 'active' : 'inactive')) {
+          updateUser({ ...user, availabilityStatus: activeState ? 'active' : 'inactive' });
+        }
+
         if (!activeState) setIsSubmitting(false); // Stop loading if it was a status change
       } catch (e) {
         console.error('Error updating location:', e);

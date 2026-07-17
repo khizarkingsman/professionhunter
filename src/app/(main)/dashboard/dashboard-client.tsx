@@ -26,21 +26,12 @@ export default function DashboardClient() {
   const [selectedProfession, setSelectedProfession] = useState('all');
   const [selectedCity, setSelectedCity] = useState('all');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState('all');
-  const {user, loading} = useAuth();
+  const {user, loading, getAllUsers} = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const {t} = useLanguage();
 
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    // In a real app, you would fetch users, but here we get them from localStorage
-    // to include newly registered users.
-    const storedUsers = localStorage.getItem('handy-connect-all-users');
-    if (storedUsers) {
-      setAllUsers(JSON.parse(storedUsers));
-    }
-  }, []);
+  const allUsers = getAllUsers();
 
   useEffect(() => {
     if (!loading && user === null) {

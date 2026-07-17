@@ -75,7 +75,7 @@ export default function AdminClient() {
   const router = useRouter();
   const {toast} = useToast();
 
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const allUsers = getAllUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDuration, setSelectedDuration] = useState('30');
   const [rejectReason, setRejectReason] = useState('');
@@ -88,18 +88,6 @@ export default function AdminClient() {
       router.push('/login');
     }
   }, [user, loading, router]);
-
-  // Refresh user list periodically
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      setAllUsers(getAllUsers());
-    }
-  }, [user, getAllUsers]);
-
-  // Refresh the list from localStorage on any interaction
-  const refreshUsers = () => {
-    setAllUsers(getAllUsers());
-  };
 
   const workers = useMemo(() => {
     return allUsers.filter(u => u.role === 'worker');
@@ -124,7 +112,6 @@ export default function AdminClient() {
 
   const handleGrantSubscription = (workerId: string) => {
     grantSubscription(workerId, parseInt(selectedDuration));
-    refreshUsers();
     setGrantDialogOpen(null);
     setSelectedDuration('30');
     toast({
@@ -135,7 +122,6 @@ export default function AdminClient() {
 
   const handleRevokeSubscription = (workerId: string) => {
     revokeSubscription(workerId);
-    refreshUsers();
     toast({
       title: 'Subscription Revoked',
       description: 'Worker subscription has been revoked.',
@@ -145,7 +131,6 @@ export default function AdminClient() {
 
   const handleApproveIqama = (workerId: string) => {
     updateIqamaStatus(workerId, 'approved');
-    refreshUsers();
     toast({
       title: 'Iqama Approved',
       description: 'Worker has been verified successfully.',
@@ -162,7 +147,6 @@ export default function AdminClient() {
       return;
     }
     updateIqamaStatus(workerId, 'rejected', rejectReason);
-    refreshUsers();
     setRejectReason('');
     toast({
       title: 'Iqama Rejected',

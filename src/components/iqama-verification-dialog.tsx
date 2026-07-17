@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import {ShieldCheck, Upload, FileCheck, Clock, XCircle, AlertTriangle} from 'lucide-react';
 import {Badge} from '@/components/ui/badge';
+import {validateImageFile, iqamaSchema} from '@/lib/validation-schemas';
 
 export function IqamaVerificationDialog() {
   const {user, submitIqama} = useAuth();
@@ -34,17 +35,20 @@ export function IqamaVerificationDialog() {
   const isPro = user.isPro;
   const iqamaStatus = user.iqamaStatus || 'none';
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isBack: boolean = false) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, isBack: boolean = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Max 5MB
-    if (file.size > 5 * 1024 * 1024) {
+    // ── Validate file: MIME type allowlist + magic-byte check + size ──────
+    const validationError = await validateImageFile(file, 5 * 1024 * 1024);
+    if (validationError) {
       toast({
         variant: 'destructive',
-        title: 'File too large',
-        description: 'Please upload an image smaller than 5MB.',
+        title: 'Invalid File',
+        description: validationError,
       });
+      // Reset the input so the same file can be re-selected after correction
+      e.target.value = '';
       return;
     }
 
@@ -61,7 +65,7 @@ export function IqamaVerificationDialog() {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        
+
         // Max dimension 800px to keep base64 string small
         const MAX_DIM = 800;
         if (width > height) {
@@ -75,15 +79,15 @@ export function IqamaVerificationDialog() {
             height = MAX_DIM;
           }
         }
-        
+
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        
+
         // Compress heavily as JPEG to avoid LocalStorage quota issues
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-        
+
         if (isBack) {
           setIqamaBackImage(compressedBase64);
         } else {
@@ -96,11 +100,13 @@ export function IqamaVerificationDialog() {
   };
 
   const handleSubmit = () => {
-    if (!iqamaNumber.trim()) {
+    // ── Validate Iqama number format (exactly 10 digits) ─────────────────
+    const iqamaResult = iqamaSchema.safeParse({ iqamaNumber: iqamaNumber.trim() });
+    if (!iqamaResult.success) {
       toast({
         variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please enter your Iqama number.',
+        title: 'Invalid Iqama Number',
+        description: iqamaResult.error.flatten().fieldErrors.iqamaNumber?.[0] ?? 'Please enter a valid 10-digit Iqama number.',
       });
       return;
     }

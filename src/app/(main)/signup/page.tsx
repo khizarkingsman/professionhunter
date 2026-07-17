@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import {professions, type User} from '@/lib/data';
 import Link from 'next/link';
-import {Eye, EyeOff} from 'lucide-react';
+import {Eye, EyeOff, AlertCircle} from 'lucide-react';
 import {useAuth} from '@/context/auth-context';
 import {useRouter} from 'next/navigation';
 import {useToast} from '@/hooks/use-toast';
@@ -29,6 +29,11 @@ import {useLanguage} from '@/context/language-context';
 import {saudiLocations, getNeighborhoodsForCity} from '@/lib/locations';
 import {db} from '@/lib/firebase';
 import {collection, addDoc, serverTimestamp} from 'firebase/firestore';
+import {
+  seekerSignupSchema,
+  workerSignupSchema,
+  storeSignupSchema,
+} from '@/lib/validation-schemas';
 
 const storeCategories = [
   {value: 'hardware', labelKey: 'storeCat_hardware' as const},
@@ -44,10 +49,22 @@ const storeCategories = [
   {value: 'other', labelKey: 'storeCat_other' as const},
 ];
 
+// Helper to display inline field errors
+function FieldError({message}: {message?: string}) {
+  if (!message) return null;
+  return (
+    <p className="flex items-center gap-1 text-xs text-destructive mt-1">
+      <AlertCircle className="h-3 w-3 shrink-0" />
+      {message}
+    </p>
+  );
+}
+
 export default function SignupPage() {
   const [userType, setUserType] = useState('seeker');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const {t} = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
@@ -72,17 +89,28 @@ export default function SignupPage() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
+  const clearFieldError = (field: string) => {
+    setFieldErrors(prev => {
+      const next = {...prev};
+      delete next[field];
+      return next;
+    });
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {id, value} = e.target;
     setFormData(prev => ({...prev, [id]: value}));
+    clearFieldError(id);
   };
 
   const handleSelectChange = (value: string) => {
     setFormData(prev => ({...prev, profession: value}));
+    clearFieldError('profession');
   };
 
   const handleCityChange = (value: string) => {
     setFormData(prev => ({...prev, city: value, neighborhood: ''}));
+    clearFieldError('city');
   };
 
   const handleNeighborhoodChange = (value: string) => {
@@ -91,15 +119,68 @@ export default function SignupPage() {
 
   const handleStoreCategoryChange = (value: string) => {
     setFormData(prev => ({...prev, storeCategory: value}));
+    clearFieldError('storeCategory');
+  };
+
+  // ── Validate and extract errors ────────────────────────────────────────────
+  const validate = (): boolean => {
+    const base = {
+      email: formData.email,
+      countryCode: formData.countryCode,
+      phone: formData.phone,
+      city: formData.city,
+      neighborhood: formData.neighborhood || undefined,
+      password: formData.password,
+    };
+
+    let result;
+    if (userType === 'store') {
+      result = storeSignupSchema.safeParse({
+        ...base,
+        storeName: formData.storeName,
+        storeAddress: formData.storeAddress,
+        storeCategory: formData.storeCategory,
+      });
+    } else if (userType === 'worker') {
+      result = workerSignupSchema.safeParse({
+        ...base,
+        name: formData.name,
+        username: formData.username,
+        age: formData.age ? parseInt(formData.age, 10) : undefined,
+        profession: formData.profession,
+      });
+    } else {
+      result = seekerSignupSchema.safeParse({
+        ...base,
+        name: formData.name,
+        username: formData.username,
+      });
+    }
+
+    if (!result.success) {
+      const flat = result.error.flatten().fieldErrors;
+      const errors: Record<string, string> = {};
+      for (const [key, msgs] of Object.entries(flat)) {
+        if (msgs?.[0]) errors[key] = msgs[0];
+      }
+      setFieldErrors(errors);
+      return false;
+    }
+
+    setFieldErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validate()) return;
+
     setIsSubmitting(true);
 
     const fullPhoneNumber = `${formData.countryCode}${formData.phone}`;
 
-    // --- Store Owner Flow: Save to Firestore AND local auth ---
+    // ── Store Owner Flow ───────────────────────────────────────────────────
     if (userType === 'store') {
       try {
         const docRef = await addDoc(collection(db, 'stores'), {
@@ -130,17 +211,20 @@ export default function SignupPage() {
           storeDocId: docRef.id,
         };
 
-        const registeredStore = signup(storeUser as User, formData.password);
+        const outcome = signup(storeUser as User, formData.password);
 
-        if (registeredStore) {
-          toast({
-            title: t('storePendingDesc'),
-            description: t('storePendingDesc'),
-          });
+        if (outcome && typeof outcome === 'object' && 'rateLimited' in outcome) {
+          toast({variant: 'destructive', title: 'Too Many Attempts', description: outcome.message});
+          return;
+        }
+
+        if (outcome) {
+          toast({title: t('storePendingDesc'), description: t('storePendingDesc')});
           router.push('/dashboard-store');
         }
       } catch (error) {
-        console.error('Error saving store to Firestore:', error);
+        // Log internally; show only a generic message to the user
+        console.error('[signup] Store Firestore write failed:', error);
         toast({
           variant: 'destructive',
           title: t('error'),
@@ -152,7 +236,7 @@ export default function SignupPage() {
       return;
     }
 
-    // --- Seeker / Worker Flow: Existing local logic ---
+    // ── Seeker / Worker Flow ───────────────────────────────────────────────
     const newUser: Partial<User> = {
       id: `user-${Date.now()}`,
       name: formData.name,
@@ -174,15 +258,18 @@ export default function SignupPage() {
       newUser.avgRating = 0;
     }
 
-    const registeredUser = signup(newUser as User, formData.password);
+    const outcome = signup(newUser as User, formData.password);
 
-    if (registeredUser) {
-      toast({
-        title: t('profileUpdated'),
-        description: t('profileSavedSuccess'),
-      });
+    if (outcome && typeof outcome === 'object' && 'rateLimited' in outcome) {
+      toast({variant: 'destructive', title: 'Too Many Attempts', description: outcome.message});
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (outcome) {
+      toast({title: t('profileUpdated'), description: t('profileSavedSuccess')});
       const targetDashboard =
-        registeredUser.role === 'worker' ? '/dashboard-worker' : '/dashboard';
+        (outcome as User).role === 'worker' ? '/dashboard-worker' : '/dashboard';
       router.push(targetDashboard);
     } else {
       toast({
@@ -238,7 +325,9 @@ export default function SignupPage() {
                     required
                     value={formData.storeName}
                     onChange={handleChange}
+                    aria-invalid={!!fieldErrors.storeName}
                   />
+                  <FieldError message={fieldErrors.storeName} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="storeAddress">{t('storeAddress')}</Label>
@@ -248,7 +337,9 @@ export default function SignupPage() {
                     required
                     value={formData.storeAddress}
                     onChange={handleChange}
+                    aria-invalid={!!fieldErrors.storeAddress}
                   />
+                  <FieldError message={fieldErrors.storeAddress} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="storeCategory">{t('storeCategory')}</Label>
@@ -264,6 +355,7 @@ export default function SignupPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FieldError message={fieldErrors.storeCategory} />
                 </div>
               </>
             )}
@@ -279,7 +371,9 @@ export default function SignupPage() {
                     required
                     value={formData.name}
                     onChange={handleChange}
+                    aria-invalid={!!fieldErrors.name}
                   />
+                  <FieldError message={fieldErrors.name} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="username">{t('username')}</Label>
@@ -294,8 +388,10 @@ export default function SignupPage() {
                       value={formData.username}
                       onChange={handleChange}
                       className="pl-7"
+                      aria-invalid={!!fieldErrors.username}
                     />
                   </div>
+                  <FieldError message={fieldErrors.username} />
                 </div>
               </div>
             )}
@@ -311,7 +407,9 @@ export default function SignupPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  aria-invalid={!!fieldErrors.email}
                 />
+                <FieldError message={fieldErrors.email} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">{t('phone')}</Label>
@@ -334,8 +432,10 @@ export default function SignupPage() {
                     className="flex-1"
                     value={formData.phone}
                     onChange={handleChange}
+                    aria-invalid={!!fieldErrors.phone}
                   />
                 </div>
+                <FieldError message={fieldErrors.phone} />
               </div>
             </div>
 
@@ -355,6 +455,7 @@ export default function SignupPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={fieldErrors.city} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="neighborhood">{t('neighborhood')}</Label>
@@ -385,9 +486,11 @@ export default function SignupPage() {
                     required
                     value={formData.age}
                     onChange={handleChange}
+                    aria-invalid={!!fieldErrors.age}
                   />
+                  <FieldError message={fieldErrors.age} />
                 </div>
-                
+
                 <div className="grid gap-2">
                   <Label htmlFor="profession">{t('profession')}</Label>
                   <Select onValueChange={handleSelectChange} value={formData.profession}>
@@ -402,59 +505,35 @@ export default function SignupPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FieldError message={fieldErrors.profession} />
                 </div>
               </>
             )}
 
-            {/* === PASSWORD (for seeker/worker only, store uses email-based auth) === */}
-            {userType !== 'store' && (
-              <div className="grid gap-2 relative">
-                <Label htmlFor="password">{t('password')}</Label>
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="pr-10"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
-                  onClick={togglePasswordVisibility}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">Toggle password visibility</span>
-                </Button>
-              </div>
-            )}
-
-            {/* === STORE OWNER: PASSWORD === */}
-            {userType === 'store' && (
-              <div className="grid gap-2 relative">
-                <Label htmlFor="password">{t('password')}</Label>
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="pr-10"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
-                  onClick={togglePasswordVisibility}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">Toggle password visibility</span>
-                </Button>
-              </div>
-            )}
+            {/* === PASSWORD (all user types) === */}
+            <div className="grid gap-2 relative">
+              <Label htmlFor="password">{t('password')}</Label>
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                className="pr-10"
+                value={formData.password}
+                onChange={handleChange}
+                aria-invalid={!!fieldErrors.password}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <span className="sr-only">Toggle password visibility</span>
+              </Button>
+              <FieldError message={fieldErrors.password} />
+            </div>
 
             <Button type="submit" className="w-full mt-4" disabled={isSubmitting}>
               {isSubmitting ? t('submitting') : userType === 'store' ? t('registerStore') : t('signup')}

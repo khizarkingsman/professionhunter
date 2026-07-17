@@ -61,6 +61,8 @@ export type User = {
   isVerified?: boolean;
   // Admin-granted subscription tracking
   subscriptionGrantedBy?: string;
+  // Active state for worker tracker
+  availabilityStatus?: 'active' | 'inactive';
 };
 
 export type Review = {
