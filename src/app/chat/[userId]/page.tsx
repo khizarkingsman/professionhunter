@@ -7,26 +7,18 @@ import type {User, Chat, ChatMessage} from '@/lib/data';
 import ChatLayout from '@/components/chat/chat-layout';
 import {useAuth} from '@/context/auth-context';
 import {useRouter} from 'next/navigation';
+import {LoadingScreen} from '@/components/loading-screen';
 
 export default function ChatPage({params: paramsPromise}: {params: Promise<{userId: string}>}) {
   const params = React.use(paramsPromise);
-  const {user: loggedInUser, loading} = useAuth();
+  const {user: loggedInUser, loading, getAllUsers} = useAuth();
   const router = useRouter();
   const otherUserId = params.userId;
   
-  const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  const allUsers = getAllUsers();
   const [allChats, setAllChats] = React.useState<Chat[]>([]);
 
   React.useEffect(() => {
-    // In a real app, this data would be fetched, but here we use localStorage
-    // to ensure newly created users are available.
-    const storedUsers = localStorage.getItem('handy-connect-all-users');
-    if (storedUsers) {
-      setAllUsers(JSON.parse(storedUsers));
-    } else {
-      setAllUsers(mockUsers);
-    }
-    
     const storedChats = localStorage.getItem('handy-connect-all-chats');
     if (storedChats) {
       setAllChats(JSON.parse(storedChats));
@@ -97,7 +89,7 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
 
 
   if (loading || !loggedInUser || allUsers.length === 0) {
-     return <div className="text-center py-20">Loading...</div>;
+     return <LoadingScreen message="Loading conversation..." />;
   }
 
   const otherUser = allUsers.find(u => u.id === otherUserId);

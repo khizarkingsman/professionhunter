@@ -36,8 +36,9 @@ export function SeekerLiveMap() {
   const unsubscribersRef = useRef<Function[]>([]);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
       setIsLocating(false);
+      setClientPos([24.7136, 46.6753]); // Default to Riyadh
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -46,10 +47,16 @@ export function SeekerLiveMap() {
         setIsLocating(false);
       },
       (err) => {
-        console.warn("Error getting location", err);
-        setClientPos([24.7136, 46.6753]); 
+        // Handle NotAllowedError or timeout cleanly without raw console error dump
+        if (err.code === err.PERMISSION_DENIED) {
+          console.warn("Location permission denied by user/browser. Defaulting map location to Riyadh.");
+        } else {
+          console.warn("Geolocation notice:", err.message);
+        }
+        setClientPos([24.7136, 46.6753]); // Default fallback location
         setIsLocating(false);
-      }
+      },
+      { timeout: 8000, maximumAge: 60000 }
     );
   }, []);
 

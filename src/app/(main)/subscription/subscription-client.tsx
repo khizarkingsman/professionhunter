@@ -4,6 +4,7 @@ import {useState, useMemo, useEffect} from 'react';
 import {useAuth} from '@/context/auth-context';
 import {useRouter} from 'next/navigation';
 import {useToast} from '@/hooks/use-toast';
+import {LoadingScreen} from '@/components/loading-screen';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {
@@ -59,6 +60,10 @@ function getPaymentHistory(user: any) {
 export default function SubscriptionClient() {
   const {user, loading, updateUser, subscribeUser, subscribeSeeker} = useAuth();
   const router = useRouter();
+  const [selectedPlan, setSelectedPlan] = useState<'pro' | 'seeker_pro'>('pro');
+  const [selectedMethod, setSelectedMethod] = useState<'mada' | 'stc' | 'visa' | 'apple' | 'paypal' | 'crypto'>('stc');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showWidget, setShowWidget] = useState(false);
   const {toast} = useToast();
   const [cancelling, setCancelling] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -76,11 +81,7 @@ export default function SubscriptionClient() {
   }, [user, loading, router]);
 
   if (loading || !user || user.role === 'store') {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p>Loading or redirecting...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading subscription options..." />;
   }
 
   const isWorker = user.role === 'worker';

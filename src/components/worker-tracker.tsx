@@ -5,7 +5,7 @@ import {Button} from '@/components/ui/button';
 import {MapPin, Navigation, Clock, Ban, CalendarDays, Loader2} from 'lucide-react';
 import {useAuth} from '@/context/auth-context';
 import {db} from '@/lib/firebase';
-import {doc, setDoc, serverTimestamp} from 'firebase/firestore';
+import {doc, setDoc, updateDoc, getDoc, serverTimestamp} from 'firebase/firestore';
 import * as gf from 'geofire-common';
 import {useToast} from '@/hooks/use-toast';
 import {
@@ -34,9 +34,39 @@ export function WorkerTracker() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const watcherRef = useRef<number | null>(null);
 
-  // Sync initial state if user context changes
+  // Fetch current active status directly from Firestore when initial load happens
   useEffect(() => {
-    setIsActive(user?.availabilityStatus === 'active');
+    if (!user?.id) return;
+
+    let isMounted = true;
+    const fetchActiveStatus = async () => {
+      try {
+        const userRef = doc(db, 'users', user.id);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && isMounted) {
+          const userData = userSnap.data();
+          const statusFromDb = userData.availabilityStatus === 'active';
+          setIsActive(statusFromDb);
+          if (user.availabilityStatus !== userData.availabilityStatus) {
+            updateUser({ ...user, availabilityStatus: userData.availabilityStatus || 'inactive' });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching worker active status from Firestore:', err);
+      }
+    };
+
+    fetchActiveStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  // Sync state if user context availabilityStatus updates
+  useEffect(() => {
+    if (user?.availabilityStatus) {
+      setIsActive(user.availabilityStatus === 'active');
+    }
   }, [user?.availabilityStatus]);
 
   // Inactive Modal State
@@ -103,14 +133,36 @@ export function WorkerTracker() {
         uploadLocation(position.coords.latitude, position.coords.longitude, activeState, additionalData);
       },
       (error) => {
-        setLocationError(error.message);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError('Location permission denied. Please allow location access in your browser address bar.');
+        } else {
+          setLocationError(error.message);
+        }
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
   };
 
-  const handleSetActive = () => {
+  const handleSetActive = async () => {
     setIsActive(true);
+    
+    // Save active status directly to the worker's document in Firestore
+    if (user?.id) {
+      try {
+        const userRef = doc(db, 'users', user.id);
+        await updateDoc(userRef, {
+          availabilityStatus: 'active'
+        });
+      } catch (err) {
+        try {
+          await setDoc(doc(db, 'users', user.id), { availabilityStatus: 'active' }, { merge: true });
+        } catch (e) {
+          console.error('Error saving active status to Firestore:', e);
+        }
+      }
+      updateUser({ ...user, availabilityStatus: 'active' });
+    }
+
     startGps(true, {
         inactiveStart: null,
         inactiveUntil: null,
@@ -126,9 +178,26 @@ export function WorkerTracker() {
       setShowInactiveModal(true);
   };
 
-  const confirmInactive = () => {
+  const confirmInactive = async () => {
       setIsSubmitting(true);
       setIsActive(false);
+
+      // Save inactive status directly to the worker's document in Firestore
+      if (user?.id) {
+        try {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, {
+            availabilityStatus: 'inactive'
+          });
+        } catch (err) {
+          try {
+            await setDoc(doc(db, 'users', user.id), { availabilityStatus: 'inactive' }, { merge: true });
+          } catch (e) {
+            console.error('Error saving inactive status to Firestore:', e);
+          }
+        }
+        updateUser({ ...user, availabilityStatus: 'inactive' });
+      }
 
       let untilTimestamp = null;
       let durationMinutes = null;
@@ -156,7 +225,7 @@ export function WorkerTracker() {
           setShowInactiveModal(false);
           toast({
               title: 'You are now INACTIVE',
-              description: 'Your marker is red on the map. Clients know you are unavailable.'
+              description: 'Your marker is grayed out on the map. Clients know you are unavailable.'
           });
       }, 500);
   };

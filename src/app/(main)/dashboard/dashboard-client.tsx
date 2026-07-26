@@ -20,6 +20,7 @@ import {EditSeekerProfileDialog} from '@/components/edit-seeker-profile-dialog';
 import SubscriptionCardSeeker from '@/components/subscription-card-seeker';
 import {useLanguage} from '@/context/language-context';
 import {saudiLocations, getNeighborhoodsForCity, getCityLabel} from '@/lib/locations';
+import {LoadingScreen} from '@/components/loading-screen';
 
 export default function DashboardClient() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,11 +54,7 @@ export default function DashboardClient() {
   }, [searchParams]);
 
   if (loading || !user || user.role !== 'seeker') {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p>Loading or unauthorized...</p>
-      </div>
-    );
+    return <LoadingScreen message="Finding skilled workers near you..." />;
   }
 
   const workers = allUsers.filter((u): u is User & {role: 'worker'} => u.role === 'worker');

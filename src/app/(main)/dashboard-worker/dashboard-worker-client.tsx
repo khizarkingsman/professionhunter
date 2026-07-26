@@ -23,32 +23,25 @@ import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 import {useAuth} from '@/context/auth-context';
 import {useEffect, useState} from 'react';
-import {useRouter} from 'next/navigation';
 import SubscriptionCard from '@/components/subscription-card';
 import {useLanguage} from '@/context/language-context';
 import {WorkerTracker} from '@/components/worker-tracker';
 import {IqamaVerificationDialog} from '@/components/iqama-verification-dialog';
+import {LoadingScreen} from '@/components/loading-screen';
 
 export default function DashboardWorkerClient() {
-  const {user: worker, loading} = useAuth();
+  const {user: worker, loading, getAllUsers} = useAuth();
   const router = useRouter();
   const {t} = useLanguage();
 
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const allUsers = getAllUsers();
   const [allReviews, setAllReviews] = useState<Review[]>([]);
   const [allChats, setAllChats] = useState<Chat[]>([]);
 
   useEffect(() => {
-    // In a real app, you would fetch users, but here we get them from localStorage
-    // to include newly registered users.
-    const storedUsers = localStorage.getItem('handy-connect-all-users');
-    if (storedUsers) {
-      setAllUsers(JSON.parse(storedUsers));
-    } else {
-        setAllUsers(mockUsers);
-    }
     const storedReviews = localStorage.getItem('handy-connect-all-reviews');
     if (storedReviews) {
         setAllReviews(JSON.parse(storedReviews));
@@ -73,7 +66,7 @@ export default function DashboardWorkerClient() {
 
 
   if (loading || !worker || worker.role !== 'worker') {
-    return <div className="container text-center py-20">Loading or not authorized...</div>;
+    return <LoadingScreen message="Loading worker dashboard..." />;
   }
 
   const workerReviews = allReviews.filter(r => r.workerId === worker.id);
