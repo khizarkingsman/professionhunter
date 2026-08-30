@@ -81,8 +81,8 @@ export default function DashboardStoreClient() {
           setStoreData(data);
           setEditForm(data);
         }
-      } catch (error) {
-        console.error('Error fetching store:', error);
+      } catch (error: any) {
+        console.warn('[dashboard-store] Error fetching store (offline/unreachable):', error?.message || error);
         toast({variant: 'destructive', title: 'Error', description: 'Could not load your store data.'});
       } finally {
         setLoading(false);

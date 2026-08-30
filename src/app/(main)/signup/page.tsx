@@ -183,7 +183,9 @@ export default function SignupPage() {
     // ── Store Owner Flow ───────────────────────────────────────────────────
     if (userType === 'store') {
       try {
+        const newUserId = `store-${Date.now()}`;
         const docRef = await addDoc(collection(db, 'stores'), {
+          ownerId: newUserId,
           storeName: formData.storeName,
           storeAddress: formData.storeAddress,
           storeCategory: formData.storeCategory,
@@ -198,7 +200,7 @@ export default function SignupPage() {
 
         // Also create a local user so they can log in
         const storeUser: Partial<User> = {
-          id: `store-${Date.now()}`,
+          id: newUserId,
           name: formData.storeName,
           username: formData.email.split('@')[0],
           email: formData.email,

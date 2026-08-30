@@ -88,76 +88,98 @@ export function AuthProvider({children}: {children: ReactNode}) {
   useEffect(() => {
     setLoading(true);
     // 1. Listen to Firebase users collection
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      let fetchedUsers: UserWithPassword[] = [];
-      snapshot.forEach(doc => {
-        fetchedUsers.push(doc.data() as UserWithPassword);
-      });
-
-      // 2. If the collection is empty, seed it with mock users and admin
-      if (fetchedUsers.length === 0) {
-        const seedUsers = [...mockUsers.map(u => ({...u, password: 'password123'})), ADMIN_ACCOUNT];
-        seedUsers.forEach(async (u) => {
-          await setDoc(doc(db, 'users', u.id), u);
+    const unsubscribe = onSnapshot(
+      collection(db, 'users'),
+      (snapshot) => {
+        let fetchedUsers: UserWithPassword[] = [];
+        snapshot.forEach(doc => {
+          fetchedUsers.push(doc.data() as UserWithPassword);
         });
-        fetchedUsers = seedUsers;
-      } else {
-        // Ensure admin password is kept in sync with env var if admin exists
-        const adminIndex = fetchedUsers.findIndex(u => u.id === ADMIN_ACCOUNT.id);
-        if (adminIndex !== -1 && fetchedUsers[adminIndex].password !== ADMIN_SEED_PASSWORD) {
-          setDoc(doc(db, 'users', ADMIN_ACCOUNT.id), { password: ADMIN_SEED_PASSWORD }, { merge: true });
-          fetchedUsers[adminIndex].password = ADMIN_SEED_PASSWORD;
-        } else if (adminIndex === -1) {
-          // Add admin if missing from Firebase
-          setDoc(doc(db, 'users', ADMIN_ACCOUNT.id), ADMIN_ACCOUNT);
-          fetchedUsers.push(ADMIN_ACCOUNT);
-        }
-      }
 
-      setUsers(fetchedUsers);
-
-      // 3. Update active session user if they are logged in
-      try {
-        const storedUserStr = localStorage.getItem('handy-connect-user');
-        if (storedUserStr) {
-          let parsedUser: User = JSON.parse(storedUserStr);
-          let fullUser = fetchedUsers.find(u => u.id === parsedUser.id) || parsedUser;
-
-        // Check worker subscription status
-        if (fullUser.role === 'worker' && fullUser.subscriptionEndDate) {
-          if (new Date(fullUser.subscriptionEndDate) < new Date()) {
-            fullUser = { ...fullUser, isPro: false, subscriptionEndDate: undefined };
+        // 2. If the collection is empty, seed it with mock users and admin
+        if (fetchedUsers.length === 0) {
+          const seedUsers = [...mockUsers.map(u => ({...u, password: 'password123'})), ADMIN_ACCOUNT];
+          seedUsers.forEach(async (u) => {
+            try {
+              await setDoc(doc(db, 'users', u.id), u);
+            } catch (e) {
+              console.warn('[auth] Could not seed user offline:', e);
+            }
+          });
+          fetchedUsers = seedUsers;
+        } else {
+          // Ensure admin password is kept in sync with env var if admin exists
+          const adminIndex = fetchedUsers.findIndex(u => u.id === ADMIN_ACCOUNT.id);
+          if (adminIndex !== -1 && fetchedUsers[adminIndex].password !== ADMIN_SEED_PASSWORD) {
+            setDoc(doc(db, 'users', ADMIN_ACCOUNT.id), { password: ADMIN_SEED_PASSWORD }, { merge: true }).catch(e => console.warn('[auth] Offline:', e));
+            fetchedUsers[adminIndex].password = ADMIN_SEED_PASSWORD;
+          } else if (adminIndex === -1) {
+            // Add admin if missing from Firebase
+            setDoc(doc(db, 'users', ADMIN_ACCOUNT.id), ADMIN_ACCOUNT).catch(e => console.warn('[auth] Offline:', e));
+            fetchedUsers.push(ADMIN_ACCOUNT);
           }
         }
 
-        // Check seeker subscription status
-        if (fullUser.role === 'seeker' && fullUser.seekerSubscriptionEndDate) {
-          if (new Date(fullUser.seekerSubscriptionEndDate) < new Date()) {
-            fullUser = { ...fullUser, isSeekerPro: false, seekerSubscriptionEndDate: undefined };
-          }
-        }
+        setUsers(fetchedUsers);
 
-        // Persist any changes from expiration checks
-        if (
-          fullUser.isPro !== parsedUser.isPro || 
-          fullUser.isSeekerPro !== parsedUser.isSeekerPro ||
-          fullUser.subscriptionEndDate !== parsedUser.subscriptionEndDate ||
-          fullUser.seekerSubscriptionEndDate !== parsedUser.seekerSubscriptionEndDate
-        ) {
-           setDoc(doc(db, 'users', fullUser.id), fullUser, { merge: true });
+        // 3. Update active session user if they are logged in
+        try {
+          const storedUserStr = localStorage.getItem('handy-connect-user');
+          if (storedUserStr) {
+            let parsedUser: User = JSON.parse(storedUserStr);
+            let fullUser = fetchedUsers.find(u => u.id === parsedUser.id) || parsedUser;
+
+            // Check worker subscription status
+            if (fullUser.role === 'worker' && fullUser.subscriptionEndDate) {
+              if (new Date(fullUser.subscriptionEndDate) < new Date()) {
+                fullUser = { ...fullUser, isPro: false, subscriptionEndDate: undefined };
+              }
+            }
+
+            // Check seeker subscription status
+            if (fullUser.role === 'seeker' && fullUser.seekerSubscriptionEndDate) {
+              if (new Date(fullUser.seekerSubscriptionEndDate) < new Date()) {
+                fullUser = { ...fullUser, isSeekerPro: false, seekerSubscriptionEndDate: undefined };
+              }
+            }
+
+            // Persist any changes from expiration checks
+            if (
+              fullUser.isPro !== parsedUser.isPro || 
+              fullUser.isSeekerPro !== parsedUser.isSeekerPro ||
+              fullUser.subscriptionEndDate !== parsedUser.subscriptionEndDate ||
+              fullUser.seekerSubscriptionEndDate !== parsedUser.seekerSubscriptionEndDate
+            ) {
+              setDoc(doc(db, 'users', fullUser.id), fullUser, { merge: true }).catch(e => console.warn('[auth] Offline:', e));
+            }
+            
+            localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
+            setUser(fullUser);
+          }
+        } catch (error) {
+          console.warn('[auth] Failed to initialise user:', error);
+          localStorage.removeItem('handy-connect-user');
+        } finally {
+          setLoading(false);
         }
-        
-        localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
-        setUser(fullUser);
+      },
+      (error) => {
+        console.warn('[auth] Firestore onSnapshot unreachable/offline. Using local state fallback:', error?.message);
+        // Fallback to local storage user session when Firebase is offline
+        try {
+          const storedUserStr = localStorage.getItem('handy-connect-user');
+          if (storedUserStr) {
+            setUser(JSON.parse(storedUserStr));
+          } else {
+            setUser(null);
+          }
+        } catch (e) {
+          console.warn('[auth] Failed parsing local user state:', e);
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      // Log internally; do not expose raw error to the user
-      console.error('[auth] Failed to initialise user:', error);
-      localStorage.removeItem('handy-connect-user');
-    } finally {
-      setLoading(false);
-    }
-    }); // Close onSnapshot callback
+    );
 
     return () => unsubscribe();
   }, []);

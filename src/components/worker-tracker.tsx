@@ -51,8 +51,8 @@ export function WorkerTracker() {
             updateUser({ ...user, availabilityStatus: userData.availabilityStatus || 'inactive' });
           }
         }
-      } catch (err) {
-        console.error('Error fetching worker active status from Firestore:', err);
+      } catch (err: any) {
+        console.warn('[WorkerTracker] Firestore offline/unreachable:', err?.message || err);
       }
     };
 

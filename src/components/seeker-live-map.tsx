@@ -139,7 +139,9 @@ export function SeekerLiveMap() {
         unsubscribersRef.current = [];
         
         nearbyIds.forEach((id: string) => {
-           const unsub = onSnapshot(doc(db, 'workerLocations', id), (docSnap) => {
+           const unsub = onSnapshot(
+             doc(db, 'workerLocations', id),
+             (docSnap) => {
                if (!docSnap.exists() || !mapInstanceRef.current) return;
                
                const data = docSnap.data();
@@ -178,9 +180,11 @@ export function SeekerLiveMap() {
                });
                setActiveWorkerCount(activeCount);
                setInactiveWorkerCount(inactiveCount);
-           });
-           unsubscribersRef.current.push(unsub);
-        });
+            }, (error) => {
+                console.warn(`[seeker-live-map] Firestore offline for worker ${id}:`, error?.message);
+            });
+            unsubscribersRef.current.push(unsub);
+         });
 
       } catch (error) {
         console.warn("Failed to fetch nearby workers.", error);

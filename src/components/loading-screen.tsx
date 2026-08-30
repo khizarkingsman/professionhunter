@@ -1,6 +1,6 @@
 'use client';
 
-import { Briefcase, Sparkles } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingScreenProps {
@@ -32,7 +32,6 @@ export function LoadingScreen({
         {/* Center brand badge */}
         <div className="relative h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/10">
           <Briefcase className="h-7 w-7 text-primary animate-bounce" />
-          <Sparkles className="h-3 w-3 text-amber-500 absolute -top-1 -right-1 animate-pulse" />
         </div>
       </div>
 

@@ -85,7 +85,7 @@ export default function WorkerProfilePage({params: paramsPromise}: {params: Prom
       },
       (error) => {
         if (!isSubscribed) return;
-        console.error('Error fetching worker document from Firestore:', error);
+        console.warn('[profile] Firestore unreachable/offline, fallback to mock data:', error?.message);
         const found = mockUsers.find(u => u.id === workerId) || null;
         setWorker(found);
         setLoading(false);
