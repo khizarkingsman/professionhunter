@@ -2,12 +2,13 @@
 'use client';
 
 import React from 'react';
-import {chats as mockChats, users as mockUsers} from '@/lib/data';
 import type {User, Chat, ChatMessage} from '@/lib/data';
 import ChatLayout from '@/components/chat/chat-layout';
 import {useAuth} from '@/context/auth-context';
 import {useRouter} from 'next/navigation';
 import {LoadingScreen} from '@/components/loading-screen';
+import {db} from '@/lib/firebase';
+import {doc, onSnapshot, setDoc} from 'firebase/firestore';
 
 export default function ChatPage({params: paramsPromise}: {params: Promise<{userId: string}>}) {
   const params = React.use(paramsPromise);
@@ -16,69 +17,139 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
   const otherUserId = params.userId;
   
   const allUsers = getAllUsers();
-  const [allChats, setAllChats] = React.useState<Chat[]>([]);
+  const [currentChat, setCurrentChat] = React.useState<Chat | null>(null);
 
+  // Compute deterministic chatId so both participants share the exact same Firestore doc
+  const chatId = React.useMemo(() => {
+    if (!loggedInUser || !otherUserId) return null;
+    return [loggedInUser.id, otherUserId].sort().join('_');
+  }, [loggedInUser?.id, otherUserId]);
+
+  // Real-time Firestore listener
   React.useEffect(() => {
-    const storedChats = localStorage.getItem('handy-connect-all-chats');
-    if (storedChats) {
-      setAllChats(JSON.parse(storedChats));
-    } else {
-      setAllChats(mockChats);
-      localStorage.setItem('handy-connect-all-chats', JSON.stringify(mockChats));
-    }
-  }, []);
+    if (!chatId || !loggedInUser || !otherUserId) return;
 
-  const handleNewMessage = (newMessage: ChatMessage) => {
-    setAllChats(prevChats => {
-      const chatIndex = prevChats.findIndex(
-        c => c.participants.includes(loggedInUser!.id) && c.participants.includes(otherUserId)
-      );
-
-      let updatedChats;
-
-      if (chatIndex > -1) {
-        // Add message to existing chat
-        updatedChats = [...prevChats];
-        const updatedChat = {
-          ...updatedChats[chatIndex],
-          messages: [...updatedChats[chatIndex].messages, newMessage],
-        };
-        updatedChats[chatIndex] = updatedChat;
-      } else {
-        // Create a new chat
-        const newChat: Chat = {
-          id: `chat-${Date.now()}`,
-          participants: [loggedInUser!.id, otherUserId],
-          messages: [newMessage],
-        };
-        updatedChats = [...prevChats, newChat];
+    const chatDocRef = doc(db, 'chats', chatId);
+    const unsubscribe = onSnapshot(
+      chatDocRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as Chat;
+          setCurrentChat(data);
+          // Save backup to localStorage
+          try {
+            localStorage.setItem(`handy-chat-${chatId}`, JSON.stringify(data));
+          } catch {
+            /* ignore quota */
+          }
+        } else {
+          // Check localStorage fallback or initialize empty
+          const fallbackKey = `handy-chat-${chatId}`;
+          const localData = typeof window !== 'undefined' ? localStorage.getItem(fallbackKey) : null;
+          if (localData) {
+            try {
+              setCurrentChat(JSON.parse(localData));
+              return;
+            } catch {
+              /* ignore */
+            }
+          }
+          setCurrentChat({
+            id: chatId,
+            participants: [loggedInUser.id, otherUserId],
+            messages: [],
+          });
+        }
+      },
+      (error) => {
+        console.warn('[chat] Firestore onSnapshot error:', error);
+        // Fallback to local storage
+        const fallbackKey = `handy-chat-${chatId}`;
+        const localData = typeof window !== 'undefined' ? localStorage.getItem(fallbackKey) : null;
+        if (localData) {
+          try {
+            setCurrentChat(JSON.parse(localData));
+          } catch {
+            /* ignore */
+          }
+        }
       }
-      
-      localStorage.setItem('handy-connect-all-chats', JSON.stringify(updatedChats));
-      return updatedChats;
-    });
+    );
+
+    return () => unsubscribe();
+  }, [chatId, loggedInUser?.id, otherUserId]);
+
+  const handleNewMessage = async (newMessage: ChatMessage) => {
+    if (!chatId || !loggedInUser || !otherUserId) return;
+
+    const existingMessages = currentChat?.messages || [];
+    const updatedMessages = [...existingMessages, newMessage];
+
+    const updatedChat: Chat = {
+      id: chatId,
+      participants: [loggedInUser.id, otherUserId],
+      messages: updatedMessages,
+    };
+
+    // Optimistic UI update
+    setCurrentChat(updatedChat);
+
+    // Save local backup
+    try {
+      localStorage.setItem(`handy-chat-${chatId}`, JSON.stringify(updatedChat));
+    } catch {
+      /* ignore */
+    }
+
+    // Persist to Firestore
+    try {
+      const chatDocRef = doc(db, 'chats', chatId);
+      await setDoc(
+        chatDocRef,
+        {
+          id: chatId,
+          participants: [loggedInUser.id, otherUserId],
+          messages: updatedMessages,
+          lastMessage: newMessage.text || (newMessage.file?.type?.startsWith('audio/') ? 'Voice message' : 'Media attachment'),
+          updatedAt: new Date().toISOString(),
+        },
+        {merge: true}
+      );
+    } catch (err) {
+      console.error('[chat] Failed to write message to Firestore:', err);
+    }
   };
 
-  const handleDeleteMessage = (messageId: string) => {
-    setAllChats(prevChats => {
-      const chatIndex = prevChats.findIndex(
-        c => c.participants.includes(loggedInUser!.id) && c.participants.includes(otherUserId)
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!chatId || !loggedInUser || !otherUserId || !currentChat) return;
+
+    const filteredMessages = currentChat.messages.filter(msg => msg.id !== messageId);
+    const updatedChat: Chat = {
+      ...currentChat,
+      messages: filteredMessages,
+    };
+
+    setCurrentChat(updatedChat);
+
+    try {
+      localStorage.setItem(`handy-chat-${chatId}`, JSON.stringify(updatedChat));
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      const chatDocRef = doc(db, 'chats', chatId);
+      await setDoc(
+        chatDocRef,
+        {
+          messages: filteredMessages,
+          updatedAt: new Date().toISOString(),
+        },
+        {merge: true}
       );
-
-      if (chatIndex === -1) return prevChats;
-
-      const updatedChats = [...prevChats];
-      const chatToUpdate = { ...updatedChats[chatIndex] };
-      
-      chatToUpdate.messages = chatToUpdate.messages.filter(
-        (msg) => msg.id !== messageId
-      );
-      
-      updatedChats[chatIndex] = chatToUpdate;
-
-      localStorage.setItem('handy-connect-all-chats', JSON.stringify(updatedChats));
-      return updatedChats;
-    });
+    } catch (err) {
+      console.error('[chat] Failed to delete message from Firestore:', err);
+    }
   };
 
   React.useEffect(() => {
@@ -86,7 +157,6 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
       router.push('/login');
     }
   }, [loggedInUser, loading, router]);
-
 
   if (loading || !loggedInUser || allUsers.length === 0) {
      return <LoadingScreen message="Loading conversation..." />;
@@ -98,19 +168,11 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
     return <div className="text-center py-20">User not found.</div>;
   }
 
-  // Find chat or create a new one for demonstration
-  let chat = allChats.find(
-    c => c.participants.includes(loggedInUser.id) && c.participants.includes(otherUserId)
-  );
-
-  if (!chat) {
-    chat = {
-      id: `chat-${Date.now()}`,
-      participants: [loggedInUser.id, otherUserId],
-      messages: [],
-    };
-  }
-
+  const activeChat: Chat = currentChat || {
+    id: chatId || `chat-${Date.now()}`,
+    participants: [loggedInUser.id, otherUserId],
+    messages: [],
+  };
 
   const worker =
     otherUser.role === 'worker'
@@ -119,14 +181,12 @@ export default function ChatPage({params: paramsPromise}: {params: Promise<{user
       ? loggedInUser
       : undefined;
 
-  // We pass a dummy profession if no worker is identified.
   const workerProfession = worker?.profession || 'general';
-
 
   return (
     <main className="h-screen flex flex-col">
       <ChatLayout
-        chat={chat}
+        chat={activeChat}
         currentUser={loggedInUser}
         otherUser={otherUser}
         workerProfession={workerProfession}

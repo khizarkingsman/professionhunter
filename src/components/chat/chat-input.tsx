@@ -23,13 +23,12 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
   const {toast} = useToast();
 
   useEffect(() => {
-    if (
-      typeof navigator !== 'undefined' &&
-      navigator.mediaDevices &&
-      typeof navigator.mediaDevices.getUserMedia === 'function' &&
-      window.MediaRecorder
-    ) {
-      setIsAudioSupported(true);
+    if (typeof window !== 'undefined') {
+      const hasMediaDevices = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function');
+      const hasMediaRecorder = typeof MediaRecorder !== 'undefined' || typeof (window as any).MediaRecorder !== 'undefined';
+      if (hasMediaDevices && hasMediaRecorder) {
+        setIsAudioSupported(true);
+      }
     }
   }, []);
 
@@ -56,7 +55,7 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
   };
 
   const handleLocationClick = () => {
-    if (!navigator.geolocation) {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
       toast({
         variant: 'destructive',
         title: 'Geolocation not supported',
@@ -79,7 +78,9 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
         
         let errorMessage = 'Unable to retrieve location.';
         if (error.code === 1) {
-          errorMessage = 'Location permission was denied. Please check your browser settings or the lock icon in the address bar to allow location access.';
+          errorMessage = 'Location permission was denied. Please check your browser address bar (lock icon) to allow location access.';
+        } else if (error.code === 2) {
+          errorMessage = 'Position unavailable. Please ensure your device GPS/location service is enabled.';
         } else if (error.code === 3) {
           errorMessage = 'Location request timed out. Please try again.';
         }
@@ -90,16 +91,16 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
           description: errorMessage,
         });
       },
-      { timeout: 15000, enableHighAccuracy: false, maximumAge: 30000 }
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 30000 }
     );
   };
 
   const handleMicClick = async () => {
-    if (!isAudioSupported) {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
        toast({
         variant: 'destructive',
         title: 'Voice messages not supported',
-        description: 'Your browser is blocking microphone access. If you are testing on a mobile device, you MUST use HTTPS or localhost. If you are on localhost, check if you previously denied permission.',
+        description: 'Your browser is blocking microphone access or you are not on a secure (HTTPS) connection.',
       });
       return;
     }
@@ -112,9 +113,24 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({audio: true});
         
-        // Find supported mime type for better mobile compatibility
-        const mimeTypes = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg', 'audio/wav'];
-        const supportedType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+        // Find supported mime type for better mobile & iOS compatibility
+        const mimeTypes = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',
+          'audio/aac',
+          'audio/ogg;codecs=opus',
+          'audio/wav'
+        ];
+        const supportedType = typeof MediaRecorder !== 'undefined' 
+          ? (mimeTypes.find(type => {
+              try {
+                return MediaRecorder.isTypeSupported(type);
+              } catch {
+                return false;
+              }
+            }) || '')
+          : '';
         
         const options = supportedType ? { mimeType: supportedType } : {};
         const mediaRecorder = new MediaRecorder(stream, options);
@@ -122,7 +138,7 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
         const audioChunks: Blob[] = [];
 
         mediaRecorder.ondataavailable = event => {
-          if (event.data.size > 0) {
+          if (event.data && event.data.size > 0) {
             audioChunks.push(event.data);
           }
         };
@@ -130,7 +146,7 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
         mediaRecorder.onstop = () => {
           const actualMimeType = mediaRecorder.mimeType || supportedType || 'audio/webm';
           const audioBlob = new Blob(audioChunks, {type: actualMimeType});
-          const extension = actualMimeType.includes('mp4') ? 'mp4' : 'webm';
+          const extension = actualMimeType.includes('mp4') || actualMimeType.includes('aac') ? 'mp4' : 'webm';
           const audioFile = new File([audioBlob], `voice-message.${extension}`, {type: actualMimeType});
           onSendMessage('', audioFile);
           stream.getTracks().forEach(track => track.stop()); // Stop microphone access
@@ -139,7 +155,7 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
         mediaRecorder.start(200); // Timeslice ensures data is pushed regularly
         setIsRecording(true);
       } catch (error: any) {
-        console.warn('Microphone notice:', error.name || error);
+        console.warn('Microphone error:', error.name || error);
         
         const isDenied = error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError';
         
@@ -147,8 +163,8 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
           variant: 'destructive',
           title: 'Microphone access denied',
           description: isDenied 
-            ? 'Permission was denied. If it did not ask you, you may have previously blocked it. Click the lock/info icon in your address bar to reset permissions and allow microphone access.' 
-            : 'Could not start your microphone. Please check your system settings.',
+            ? 'Permission was denied. Click the lock/site settings icon in your browser address bar to allow microphone access.' 
+            : 'Could not start your microphone. Please check your device settings.',
         });
       } finally {
         setIsRequestingMic(false);

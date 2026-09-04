@@ -37,20 +37,37 @@ export default function ChatLayout({
     setMessages(initialChat.messages);
   }, [initialChat.messages]);
 
-  const handleSendMessage = (text: string, file?: File) => {
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSendMessage = async (text: string, file?: File) => {
+    let filePayload: { url: string; type: string } | undefined = undefined;
+
+    if (file) {
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        filePayload = {
+          url: dataUrl,
+          type: file.type || (file.name.endsWith('.mp4') ? 'audio/mp4' : 'audio/webm'),
+        };
+      } catch (err) {
+        console.error('Failed to convert file to data URL:', err);
+      }
+    }
+
     const newMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       senderId: currentUser.id,
       text,
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
+      ...(filePayload ? { file: filePayload } : {})
     };
-
-    if (file) {
-      newMessage.file = {
-        url: URL.createObjectURL(file),
-        type: file.type,
-      };
-    }
 
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);

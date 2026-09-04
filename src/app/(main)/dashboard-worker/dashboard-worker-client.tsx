@@ -31,6 +31,8 @@ import {useLanguage} from '@/context/language-context';
 import {WorkerTracker} from '@/components/worker-tracker';
 import {IqamaVerificationDialog} from '@/components/iqama-verification-dialog';
 import {LoadingScreen} from '@/components/loading-screen';
+import {db} from '@/lib/firebase';
+import {collection, onSnapshot} from 'firebase/firestore';
 
 export default function DashboardWorkerClient() {
   const {user: worker, loading, getAllUsers} = useAuth();
@@ -49,14 +51,35 @@ export default function DashboardWorkerClient() {
         setAllReviews(mockReviews);
         localStorage.setItem('handy-connect-all-reviews', JSON.stringify(mockReviews));
     }
-    const storedChats = localStorage.getItem('handy-connect-all-chats');
-    if (storedChats) {
-      setAllChats(JSON.parse(storedChats));
-    } else {
-      setAllChats(mockChats);
-      localStorage.setItem('handy-connect-all-chats', JSON.stringify(mockChats));
-    }
-  }, []);
+
+    if (!worker) return;
+
+    // Listen to active conversations in real-time from Firestore
+    const unsubscribe = onSnapshot(
+      collection(db, 'chats'),
+      (snapshot) => {
+        const fetchedChats: Chat[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Chat;
+          if (data.participants && data.participants.includes(worker.id)) {
+            fetchedChats.push(data);
+          }
+        });
+        setAllChats(fetchedChats);
+      },
+      (err) => {
+        console.warn('[worker-dashboard] Firestore chats error:', err);
+        const storedChats = localStorage.getItem('handy-connect-all-chats');
+        if (storedChats) {
+          setAllChats(JSON.parse(storedChats));
+        } else {
+          setAllChats(mockChats);
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [worker?.id]);
 
   useEffect(() => {
     if (!loading && !worker) {

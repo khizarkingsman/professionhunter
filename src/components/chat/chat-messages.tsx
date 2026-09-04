@@ -29,23 +29,31 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
     const audio = audioRef.current;
     if (audio) {
       const setAudioData = () => {
-        setDuration(audio.duration);
+        if (!isNaN(audio.duration) && audio.duration !== Infinity) {
+          setDuration(audio.duration);
+        }
         setCurrentTime(audio.currentTime);
       };
 
       const setAudioTime = () => setCurrentTime(audio.currentTime);
+      const onEnded = () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+      };
 
       audio.addEventListener('loadedmetadata', setAudioData);
+      audio.addEventListener('durationchange', setAudioData);
       audio.addEventListener('timeupdate', setAudioTime);
-      audio.addEventListener('ended', () => setIsPlaying(false));
+      audio.addEventListener('ended', onEnded);
 
       return () => {
         audio.removeEventListener('loadedmetadata', setAudioData);
+        audio.removeEventListener('durationchange', setAudioData);
         audio.removeEventListener('timeupdate', setAudioTime);
-        audio.removeEventListener('ended', () => setIsPlaying(false));
+        audio.removeEventListener('ended', onEnded);
       };
     }
-  }, []);
+  }, [src]);
   
   const togglePlay = async () => {
     if (!audioRef.current) return;
@@ -55,7 +63,6 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
       setIsPlaying(false);
     } else {
       try {
-        // We await the play promise to catch any rejections (like browser blocks)
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           await playPromise;
@@ -63,12 +70,10 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
         setIsPlaying(true);
       } catch (error: any) {
         console.error("Audio playback failed:", error);
-        
-        // Show a helpful toast instead of a crash
         toast({
           variant: "destructive",
           title: "Playback Error",
-          description: "This audio format may not be supported on your device, or playback was blocked.",
+          description: "Could not play audio. The format may not be supported by your device.",
         });
         setIsPlaying(false);
       }
@@ -95,7 +100,7 @@ function AudioPlayer({ src, sender, isCurrentUser }: AudioPlayerProps) {
           <AvatarImage src={sender.avatarUrl} alt={sender.name} />
           <AvatarFallback>{sender.name.charAt(0)}</AvatarFallback>
       </Avatar>
-      <audio ref={audioRef} src={src} preload="metadata" playsInline />
+      <audio ref={audioRef} src={src} preload="auto" playsInline />
       <Button 
         type="button"
         variant="ghost" 
@@ -138,7 +143,7 @@ interface ChatMessagesProps {
 
 export default function ChatMessages({messages, currentUser, otherUser, onDeleteMessage}: ChatMessagesProps) {
   const isLocationLink = (text: string) => {
-    return text.startsWith('https://www.google.com/maps?q=');
+    return text.includes('google.com/maps') || text.includes('maps.google.com');
   };
 
   return (
@@ -147,39 +152,64 @@ export default function ChatMessages({messages, currentUser, otherUser, onDelete
         const isCurrentUser = message.senderId === currentUser.id;
         const sender = isCurrentUser ? currentUser : otherUser;
 
+        const isAudio = message.file?.url && (
+          message.file.type.startsWith('audio/') || 
+          message.file.url.startsWith('data:audio/') || 
+          message.file.url.endsWith('.webm') || 
+          message.file.url.endsWith('.mp4') ||
+          message.file.url.endsWith('.ogg')
+        );
+
+        const isImage = message.file?.url && (
+          message.file.type.startsWith('image/') || 
+          message.file.url.startsWith('data:image/')
+        );
+
+        const isVideo = message.file?.url && (
+          message.file.type.startsWith('video/') || 
+          message.file.url.startsWith('data:video/')
+        );
+
         const messageContent = (
           <>
-            {message.file?.url && message.file.type.startsWith('image/') && (
-              <Image
-                src={message.file.url}
+            {isImage && (
+              <img
+                src={message.file!.url}
                 alt="Sent image"
-                width={300}
-                height={300}
-                className="rounded-lg object-cover"
+                className="rounded-lg object-cover max-w-xs max-h-64 mb-1"
               />
             )}
-            {message.file?.url && message.file.type.startsWith('video/') && (
-              <video src={message.file.url} controls className="rounded-lg max-w-xs" />
+            {isVideo && (
+              <video src={message.file!.url} controls className="rounded-lg max-w-xs mb-1" />
             )}
-             {message.file?.url && (message.file.type.startsWith('audio/') || message.file.url.endsWith('.webm') || message.file.url.endsWith('.mp4')) && (
-               <AudioPlayer src={message.file.url} sender={sender} isCurrentUser={isCurrentUser} />
+            {isAudio && (
+              <AudioPlayer src={message.file!.url} sender={sender} isCurrentUser={isCurrentUser} />
             )}
             {message.text &&
               (isLocationLink(message.text) ? (
-                <Link
-                  href={message.text}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn('flex items-center gap-2 underline', {
-                    'text-primary-foreground': isCurrentUser,
-                    'text-blue-500': !isCurrentUser,
-                  })}
-                >
-                  <MapPin className="w-4 h-4" />
-                  View Location
-                </Link>
+                <div className="flex flex-col gap-2 py-1">
+                  <div className="flex items-center gap-1.5 font-medium text-sm">
+                    <MapPin className={cn("w-4 h-4", isCurrentUser ? "text-primary-foreground" : "text-red-500")} />
+                    <span>Live Location Shared</span>
+                  </div>
+                  <Button
+                    variant={isCurrentUser ? "secondary" : "default"}
+                    size="sm"
+                    className="w-full text-xs h-8 flex items-center gap-1.5"
+                    asChild
+                  >
+                    <a
+                      href={message.text}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      Open in Google Maps
+                    </a>
+                  </Button>
+                </div>
               ) : (
-                <p className="text-sm">{message.text}</p>
+                <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
               ))}
             <p
               className={cn('text-xs mt-1 text-right', {
@@ -212,10 +242,10 @@ export default function ChatMessages({messages, currentUser, otherUser, onDelete
               </Avatar>
             )}
             <div
-              className={cn('max-w-md p-3 rounded-lg', {
+              className={cn('max-w-md p-3 rounded-lg shadow-sm', {
                 'bg-primary text-primary-foreground': isCurrentUser,
                 'bg-card border': !isCurrentUser,
-                'p-2': message.file?.url && (message.file.type.startsWith('audio/') || message.file.url.endsWith('.webm') || message.file.url.endsWith('.mp4'))
+                'p-2': isAudio
               })}
             >
               {messageContent}
