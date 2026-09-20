@@ -211,9 +211,10 @@ export default function SignupPage() {
           role: 'store' as const,
           avatarUrl: `https://picsum.photos/seed/${Date.now()}/400/400`,
           storeDocId: docRef.id,
+          phoneVerified: false,
         };
 
-        const outcome = signup(storeUser as User, formData.password);
+        const outcome = await signup(storeUser as User, formData.password);
 
         if (outcome && typeof outcome === 'object' && 'rateLimited' in outcome) {
           toast({variant: 'destructive', title: 'Too Many Attempts', description: outcome.message});
@@ -250,6 +251,7 @@ export default function SignupPage() {
       neighborhood: formData.neighborhood,
       role: userType as 'seeker' | 'worker',
       avatarUrl: `https://picsum.photos/seed/${Date.now()}/400/400`,
+      phoneVerified: false,
     };
 
     if (userType === 'worker') {
@@ -260,7 +262,7 @@ export default function SignupPage() {
       newUser.avgRating = 0;
     }
 
-    const outcome = signup(newUser as User, formData.password);
+    const outcome = await signup(newUser as User, formData.password);
 
     if (outcome && typeof outcome === 'object' && 'rateLimited' in outcome) {
       toast({variant: 'destructive', title: 'Too Many Attempts', description: outcome.message});

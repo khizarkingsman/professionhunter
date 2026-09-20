@@ -1,26 +1,19 @@
 
 'use client';
 
-import React, {createContext, useContext, useState, useEffect, ReactNode} from 'react';
-import {users as mockUsers, User} from '@/lib/data';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { users as mockUsers, User } from '@/lib/data';
 import emailjs from '@emailjs/browser';
-import {getClientRateLimiter} from '@/lib/client-rate-limiter';
-import {db} from '@/lib/firebase';
-import {collection, doc, setDoc, onSnapshot} from 'firebase/firestore';
+import { getClientRateLimiter } from '@/lib/client-rate-limiter';
+import { db } from '@/lib/firebase';
+import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-type UserWithPassword = User & {password: string};
+type UserWithPassword = User & { password?: string };
 
 // ---------------------------------------------------------------------------
-// Admin seed account
+// Admin account definition (Client-safe: password never stored on client)
 // ---------------------------------------------------------------------------
-// The password is read from an environment variable — never hardcoded.
-// IMPORTANT: Move admin auth to a server-side API route before going to
-// production. NEXT_PUBLIC_ vars are visible in the browser bundle and are
-// used here only as a temporary measure.
-const ADMIN_SEED_PASSWORD =
-  process.env.NEXT_PUBLIC_ADMIN_SEED_PASSWORD ?? 'change_me';
-
-const ADMIN_ACCOUNT: UserWithPassword = {
+const ADMIN_ACCOUNT: User = {
   id: 'admin-001',
   name: 'Admin',
   username: 'admin',
@@ -31,8 +24,8 @@ const ADMIN_ACCOUNT: UserWithPassword = {
   age: 30,
   phone: '+966500000000',
   avatarUrl: 'https://placehold.co/100x100.png?text=A',
-  password: ADMIN_SEED_PASSWORD,
   lastSeen: 'online',
+  phoneVerified: true,
 };
 
 // ---------------------------------------------------------------------------
@@ -49,9 +42,9 @@ const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ?? '';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (identifier: string, password: string) => User | null | { rateLimited: true; message: string };
+  login: (identifier: string, password: string) => Promise<User | null | { rateLimited: true; message: string }>;
   logout: () => void;
-  signup: (newUser: User, password: string) => User | null | { rateLimited: true; message: string };
+  signup: (newUser: User, password: string) => Promise<User | null | { rateLimited: true; message: string }>;
   updateUser: (updatedUser: User) => void;
   subscribeUser: (amount: string, method: string) => void;
   subscribeSeeker: (amount: string, method: string) => void;
@@ -63,6 +56,7 @@ interface AuthContextType {
   revokeSubscription: (workerId: string) => void;
   updateIqamaStatus: (workerId: string, status: 'approved' | 'rejected', reason?: string) => void;
   submitIqama: (iqamaNumber: string, iqamaImageUrl: string, iqamaBackImageUrl: string) => void;
+  setPhoneVerified: (verified?: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,10 +65,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Provider
 // ---------------------------------------------------------------------------
 
-export function AuthProvider({children}: {children: ReactNode}) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<UserWithPassword[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   // Helper function to update a user in the main users array and save to Firestore
   const updateAllUsers = async (updatedUser: Partial<UserWithPassword>) => {
@@ -87,18 +81,20 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
   useEffect(() => {
     setLoading(true);
-    // 1. Listen to Firebase users collection
+    // 1. Listen to Firebase users collection and sanitize on arrival
     const unsubscribe = onSnapshot(
       collection(db, 'users'),
       (snapshot) => {
-        let fetchedUsers: UserWithPassword[] = [];
-        snapshot.forEach(doc => {
-          fetchedUsers.push(doc.data() as UserWithPassword);
+        let fetchedUsers: User[] = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const { password: _p, ...sanitized } = data;
+          fetchedUsers.push(sanitized as User);
         });
 
-        // 2. If the collection is empty, seed it with mock users and admin
+        // 2. If the collection is empty, seed it with mock users without passwords
         if (fetchedUsers.length === 0) {
-          const seedUsers = [...mockUsers.map(u => ({...u, password: 'password123'})), ADMIN_ACCOUNT];
+          const seedUsers = [...mockUsers, ADMIN_ACCOUNT];
           seedUsers.forEach(async (u) => {
             try {
               await setDoc(doc(db, 'users', u.id), u);
@@ -108,14 +104,8 @@ export function AuthProvider({children}: {children: ReactNode}) {
           });
           fetchedUsers = seedUsers;
         } else {
-          // Ensure admin password is kept in sync with env var if admin exists
-          const adminIndex = fetchedUsers.findIndex(u => u.id === ADMIN_ACCOUNT.id);
-          if (adminIndex !== -1 && fetchedUsers[adminIndex].password !== ADMIN_SEED_PASSWORD) {
-            setDoc(doc(db, 'users', ADMIN_ACCOUNT.id), { password: ADMIN_SEED_PASSWORD }, { merge: true }).catch(e => console.warn('[auth] Offline:', e));
-            fetchedUsers[adminIndex].password = ADMIN_SEED_PASSWORD;
-          } else if (adminIndex === -1) {
-            // Add admin if missing from Firebase
-            setDoc(doc(db, 'users', ADMIN_ACCOUNT.id), ADMIN_ACCOUNT).catch(e => console.warn('[auth] Offline:', e));
+          // Ensure admin account exists in list
+          if (!fetchedUsers.some(u => u.id === ADMIN_ACCOUNT.id)) {
             fetchedUsers.push(ADMIN_ACCOUNT);
           }
         }
@@ -145,14 +135,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
             // Persist any changes from expiration checks
             if (
-              fullUser.isPro !== parsedUser.isPro || 
+              fullUser.isPro !== parsedUser.isPro ||
               fullUser.isSeekerPro !== parsedUser.isSeekerPro ||
               fullUser.subscriptionEndDate !== parsedUser.subscriptionEndDate ||
               fullUser.seekerSubscriptionEndDate !== parsedUser.seekerSubscriptionEndDate
             ) {
               setDoc(doc(db, 'users', fullUser.id), fullUser, { merge: true }).catch(e => console.warn('[auth] Offline:', e));
             }
-            
+
             localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
             setUser(fullUser);
           }
@@ -186,7 +176,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
   // ─── Login ─────────────────────────────────────────────────────────────────
 
-  const login = (identifier: string, password: string): User | null | { rateLimited: true; message: string } => {
+  const login = async (identifier: string, password: string): Promise<User | null | { rateLimited: true; message: string }> => {
     const rl = getClientRateLimiter();
 
     // Per-identifier rate limit check (combines IP fingerprint + account)
@@ -195,23 +185,32 @@ export function AuthProvider({children}: {children: ReactNode}) {
       return { rateLimited: true, message: check.message ?? 'Too many attempts. Please try again later.' };
     }
 
-    const ident = identifier.toLowerCase();
-    const foundUser = users.find(
-      u => (u.email.toLowerCase() === ident || u.username.toLowerCase() === ident || u.phone === identifier) && u.password === password
-    );
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+      });
 
-    if (foundUser) {
-      // Success — clear the rate-limit counter
-      rl.onSuccess('auth', identifier);
+      if (!res.ok) {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => ({}));
+          return { rateLimited: true, message: data.error ?? 'Too many attempts. Please try again later.' };
+        }
+        rl.onFailure('auth', identifier);
+        return null;
+      }
 
-      const userWithOnlineStatus = { ...foundUser, lastSeen: 'online' };
-      const {password: _p, ...userToSave} = userWithOnlineStatus;
-
-      updateAllUsers(userWithOnlineStatus);
-
-      setUser(userToSave);
-      localStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
-      return userToSave;
+      const data = await res.json();
+      if (data.success && data.user) {
+        rl.onSuccess('auth', identifier);
+        const loggedIn = data.user as User;
+        setUser(loggedIn);
+        sessionStorage.setItem('handy-connect-user', JSON.stringify(loggedIn));
+        return loggedIn;
+      }
+    } catch (err) {
+      console.error('[auth] Login API call failed:', err);
     }
 
     // Failure — record the attempt for backoff calculation
@@ -223,16 +222,20 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
   const logout = () => {
     if (user) {
-        const lastSeenTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        updateAllUsers({ ...user, lastSeen: `last seen today at ${lastSeenTime}` });
+      const lastSeenTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      updateAllUsers({ ...user, lastSeen: `last seen today at ${lastSeenTime}` });
     }
     setUser(null);
-    localStorage.removeItem('handy-connect-user');
+    sessionStorage.removeItem('handy-connect-user');
+
+    // Clear httpOnly session cookie via API route
+    fetch('/api/auth/logout', { method: 'POST' })
+      .catch(err => console.warn('[auth] Failed to clear session cookie:', err));
   };
 
   // ─── Signup ────────────────────────────────────────────────────────────────
 
-  const signup = (newUser: User, password: string): User | null | { rateLimited: true; message: string } => {
+  const signup = async (newUser: User, password: string): Promise<User | null | { rateLimited: true; message: string }> => {
     const rl = getClientRateLimiter();
     const rateLimitKey = `signup:${newUser.email}`;
 
@@ -248,20 +251,32 @@ export function AuthProvider({children}: {children: ReactNode}) {
       return null;
     }
 
-    const userWithPassword: UserWithPassword = {...newUser, password, isPro: false, isSeekerPro: false, lastSeen: 'online'};
-    
-    // Write to Firebase
-    setDoc(doc(db, 'users', newUser.id as string), userWithPassword).catch(e => {
-       console.error('[auth] Failed to write new user to Firestore:', e);
-    });
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: newUser, password }),
+      });
 
-    // Success — clear rate-limit counter
-    rl.onSuccess('auth', rateLimitKey);
+      if (!res.ok) {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => ({}));
+          return { rateLimited: true, message: data.error ?? 'Too many attempts. Please try again later.' };
+        }
+        rl.onFailure('auth', rateLimitKey);
+        return null;
+      }
 
-    const {password: _p, ...userToSave} = userWithPassword;
-    setUser(userToSave);
-    localStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
-    return userToSave;
+      const { user: registeredUser } = await res.json();
+      rl.onSuccess('auth', rateLimitKey);
+      setUser(registeredUser);
+      sessionStorage.setItem('handy-connect-user', JSON.stringify(registeredUser));
+      return registeredUser;
+    } catch (err) {
+      console.error('[auth] Registration API call failed:', err);
+      rl.onFailure('auth', rateLimitKey);
+      return null;
+    }
   };
 
   // ─── Update user ───────────────────────────────────────────────────────────
@@ -270,12 +285,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
     await updateAllUsers(updatedUser);
 
     if (user?.id === updatedUser.id) {
-      // Find the full record to ensure password isn't lost from the main state
       const fullUserRecord = users.find(u => u.id === updatedUser.id);
-      const userToSave = { ...fullUserRecord, ...updatedUser };
-      const { password, ...rest } = userToSave; // Omit password for client-side storage
-      setUser(rest as User);
-      localStorage.setItem('handy-connect-user', JSON.stringify(rest));
+      const userToSave: User = { ...fullUserRecord, ...updatedUser };
+      setUser(userToSave);
+      sessionStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
     }
   };
 
@@ -334,7 +347,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
   // ─── Admin Functions ───────────────────────────────────────────────────────
 
   const getAllUsers = (): User[] => {
-    return users.map(({password: _p, ...rest}) => rest as User);
+    return users;
   };
 
   const grantSubscription = (workerId: string, durationDays: number) => {
@@ -471,11 +484,21 @@ export function AuthProvider({children}: {children: ReactNode}) {
     return true;
   };
 
+  const setPhoneVerified = (verified: boolean = true) => {
+    if (user) {
+      const updatedUser: User = { ...user, phoneVerified: verified };
+      setUser(updatedUser);
+      localStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user, loading, login, logout, signup, updateUser, subscribeUser, subscribeSeeker,
       requestPasswordReset, resetPassword,
-      getAllUsers, grantSubscription, revokeSubscription, updateIqamaStatus, submitIqama
+      getAllUsers, grantSubscription, revokeSubscription, updateIqamaStatus, submitIqama,
+      setPhoneVerified
     }}>
       {children}
     </AuthContext.Provider>
