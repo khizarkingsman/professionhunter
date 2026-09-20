@@ -3,7 +3,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { users as mockUsers, User } from '@/lib/data';
-import emailjs from '@emailjs/browser';
 import { getClientRateLimiter } from '@/lib/client-rate-limiter';
 import { db } from '@/lib/firebase';
 import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -49,7 +48,7 @@ interface AuthContextType {
   subscribeUser: (amount: string, method: string) => void;
   subscribeSeeker: (amount: string, method: string) => void;
   requestPasswordReset: (identifier: string) => Promise<string | null>;
-  resetPassword: (identifier: string, newPassword: string) => boolean;
+  resetPassword: (identifier: string, code: string, newPassword: string) => Promise<boolean>;
   // Admin functions
   getAllUsers: () => User[];
   grantSubscription: (workerId: string, durationDays: number) => void;
@@ -428,60 +427,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const rl = getClientRateLimiter();
     const check = rl.check('auth', `reset:${identifier}`);
     if (!check.allowed) {
-      // Surface the rate-limit message through the return value convention.
-      // The caller (forgot-password page) checks for null as a generic error;
-      // the rate-limit toast is shown by the calling component instead.
       return `__rate_limited__:${check.message ?? 'Too many attempts.'}`;
     }
-
-    const ident = identifier.toLowerCase();
-    const foundUser = users.find(
-      u => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident || u.phone === identifier
-    );
-
-    // SECURITY: Always pretend to send the OTP regardless of whether the user
-    // exists — this prevents user-enumeration via the password-reset flow.
-    // The passcode is returned only when the user actually exists so the UI
-    // can verify it; the caller must show the same generic UI in both cases.
-    if (!foundUser) {
-      rl.onFailure('auth', `reset:${identifier}`);
-      // Return a fake code so the UI advances to step 2 (enter OTP).
-      // The OTP will never match, so no real access is granted.
-      // This is preferable to returning null which would reveal non-existence.
-      const fakeCode = Math.floor(100000 + Math.random() * 900000).toString();
-      return `__fake__${fakeCode}`;
-    }
-
     try {
-      const passcode = Math.floor(100000 + Math.random() * 900000).toString();
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        { passcode, email: foundUser.email },
-        EMAILJS_PUBLIC_KEY,
-      );
+      await fetch('/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier }),
+      });
       rl.onSuccess('auth', `reset:${identifier}`);
-      return passcode;
-    } catch (error) {
-      // Log internally; surface only a generic failure to the UI
-      console.error('[auth] Password reset email failed to send:', error);
+    } catch {
       rl.onFailure('auth', `reset:${identifier}`);
-      return null;
     }
+    // Always return a sentinel so UI moves to step 2 without revealing existence
+    return '__server_handled__';
   };
 
   // ─── Reset password ─────────────────────────────────────────────────────────
 
-  const resetPassword = (identifier: string, newPassword: string): boolean => {
-    const ident = identifier.toLowerCase();
-    const userIndex = users.findIndex(
-      u => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident || u.phone === identifier
-    );
-    if (userIndex === -1) return false;
-
-    const updatedUser = { ...users[userIndex], password: newPassword };
-    updateAllUsers(updatedUser);
-    return true;
+  const resetPassword = async (identifier: string, code: string, newPassword: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/verify-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, code, newPassword }),
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('[auth] Password reset verification failed:', err);
+      return false;
+    }
   };
 
   const setPhoneVerified = (verified: boolean = true) => {

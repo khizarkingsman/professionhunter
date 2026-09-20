@@ -40,7 +40,6 @@ export default function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [code, setCode] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -82,11 +81,7 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // SECURITY: Always advance to step 2 — regardless of whether the account
-    // exists.  If the code starts with '__fake__' the OTP won't match any real
-    // user, so no access is granted, but we reveal nothing about account
-    // existence to the requester.
-    setGeneratedCode(returnedCode);
+    // Advance to step 2 without exposing code
     setStep(2);
     toast({
       title: t('emailSent'),
@@ -96,7 +91,7 @@ export default function ForgotPasswordPage() {
 
   // ── Step 2: Verify OTP ────────────────────────────────────────────────────
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     if (!code.trim()) {
       setFieldErrors({ code: 'Please enter the verification code.' });
       return;
@@ -107,26 +102,36 @@ export default function ForgotPasswordPage() {
     }
     setFieldErrors({});
 
-    // Reject fake codes (user doesn't exist case)
-    const isRealCode = !generatedCode.startsWith('__fake__');
-    const expectedCode = isRealCode ? generatedCode : '';
+    try {
+      const res = await fetch('/api/auth/verify-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, code: code.trim() }),
+      });
 
-    if (!isRealCode || code !== expectedCode) {
+      if (!res.ok) {
+        toast({
+          variant: 'destructive',
+          title: t('invalidCode'),
+          description: t('invalidCodeDesc'),
+        });
+        return;
+      }
+
+      setStep(3);
+      toast({ title: t('verifiedSuccess'), description: t('chooseNewPasswordDesc') });
+    } catch {
       toast({
         variant: 'destructive',
-        title: t('invalidCode'),
+        title: t('error'),
         description: t('invalidCodeDesc'),
       });
-      return;
     }
-
-    setStep(3);
-    toast({ title: t('verifiedSuccess'), description: t('chooseNewPasswordDesc') });
   };
 
   // ── Step 3: Reset password ────────────────────────────────────────────────
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     const result = resetPasswordSchema.safeParse({ newPassword, confirmPassword });
     if (!result.success) {
       const flat = result.error.flatten().fieldErrors;
@@ -140,7 +145,7 @@ export default function ForgotPasswordPage() {
     }
     setFieldErrors({});
 
-    const success = resetPassword(identifier, result.data.newPassword);
+    const success = await resetPassword(identifier, code.trim(), result.data.newPassword);
     if (success) {
       toast({
         title: t('resetSuccess'),
