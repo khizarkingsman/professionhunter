@@ -148,22 +148,6 @@ export async function POST(req: NextRequest) {
         console.warn('[api/auth/login] User lookup failed during signup session init:', err);
       }
 
-      // Allow if name is also provided during active signup session
-      if (!authenticatedUser && name) {
-        authenticatedUser = {
-          id: userId,
-          role,
-          name,
-          username: name.toLowerCase().replace(/\s+/g, ''),
-          email: `${userId}@professionhunter.com`,
-          country: 'Saudi Arabia',
-          city: 'riyadh',
-          age: 25,
-          phone: '',
-          avatarUrl: 'https://placehold.co/100x100.png',
-        };
-      }
-
       if (!authenticatedUser) {
         return NextResponse.json(
           { error: 'Invalid user verification' },
