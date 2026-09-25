@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { users as mockUsers, User } from '@/lib/data';
 import { getClientRateLimiter } from '@/lib/client-rate-limiter';
 import { db } from '@/lib/firebase';
-import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 
 type UserWithPassword = User & { password?: string };
 
@@ -61,6 +60,46 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function checkSubscriptionExpiry(u: User): User {
+  let fullUser = { ...u };
+  // Check worker subscription status
+  if (fullUser.role === 'worker' && fullUser.subscriptionEndDate) {
+    if (new Date(fullUser.subscriptionEndDate) < new Date()) {
+      fullUser = { ...fullUser, isPro: false, subscriptionEndDate: undefined };
+    }
+  }
+
+  // Check seeker subscription status
+  if (fullUser.role === 'seeker' && fullUser.seekerSubscriptionEndDate) {
+    if (new Date(fullUser.seekerSubscriptionEndDate) < new Date()) {
+      fullUser = { ...fullUser, isSeekerPro: false, seekerSubscriptionEndDate: undefined };
+    }
+  }
+
+  return fullUser;
+}
+
+async function fetchUserById(userId: string): Promise<User | null> {
+  if (userId === ADMIN_ACCOUNT.id) {
+    return ADMIN_ACCOUNT;
+  }
+
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    const { password: _p, ...sanitized } = data;
+    return checkSubscriptionExpiry(sanitized as User);
+  } catch (err) {
+    console.warn('[auth] Failed to fetch user document from Firestore:', err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
 
@@ -79,19 +118,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    setLoading(true);
-    // 1. Listen to Firebase users collection and sanitize on arrival
+    // 1. Rehydrate active session from httpOnly cookie via /api/auth/session
+    async function rehydrateSession() {
+      try {
+        const res = await fetch('/api/auth/session');
+        if (!res.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await res.json();
+        const sessionUserId = data?.user?.userId;
+        if (!sessionUserId) {
+          setUser(null);
+          return;
+        }
+
+        const fullUser = await fetchUserById(sessionUserId);
+        setUser(fullUser);
+      } catch (err) {
+        console.warn('[auth] Session rehydration failed:', err);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    rehydrateSession();
+
+    // 2. Listen to Firebase users collection for admin functions and seeding
     const unsubscribe = onSnapshot(
       collection(db, 'users'),
       (snapshot) => {
         let fetchedUsers: User[] = [];
-        snapshot.forEach(docSnap => {
+        snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           const { password: _p, ...sanitized } = data;
           fetchedUsers.push(sanitized as User);
         });
 
-        // 2. If the collection is empty, seed it with mock users without passwords
+        // If the collection is empty, seed it with mock users without passwords
         if (fetchedUsers.length === 0) {
           const seedUsers = [...mockUsers, ADMIN_ACCOUNT];
           seedUsers.forEach(async (u) => {
@@ -104,70 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchedUsers = seedUsers;
         } else {
           // Ensure admin account exists in list
-          if (!fetchedUsers.some(u => u.id === ADMIN_ACCOUNT.id)) {
+          if (!fetchedUsers.some((u) => u.id === ADMIN_ACCOUNT.id)) {
             fetchedUsers.push(ADMIN_ACCOUNT);
           }
         }
 
         setUsers(fetchedUsers);
-
-        // 3. Update active session user if they are logged in
-        try {
-          const storedUserStr = localStorage.getItem('handy-connect-user');
-          if (storedUserStr) {
-            let parsedUser: User = JSON.parse(storedUserStr);
-            let fullUser = fetchedUsers.find(u => u.id === parsedUser.id) || parsedUser;
-
-            // Check worker subscription status
-            if (fullUser.role === 'worker' && fullUser.subscriptionEndDate) {
-              if (new Date(fullUser.subscriptionEndDate) < new Date()) {
-                fullUser = { ...fullUser, isPro: false, subscriptionEndDate: undefined };
-              }
-            }
-
-            // Check seeker subscription status
-            if (fullUser.role === 'seeker' && fullUser.seekerSubscriptionEndDate) {
-              if (new Date(fullUser.seekerSubscriptionEndDate) < new Date()) {
-                fullUser = { ...fullUser, isSeekerPro: false, seekerSubscriptionEndDate: undefined };
-              }
-            }
-
-            // Persist any changes from expiration checks
-            if (
-              fullUser.isPro !== parsedUser.isPro ||
-              fullUser.isSeekerPro !== parsedUser.isSeekerPro ||
-              fullUser.subscriptionEndDate !== parsedUser.subscriptionEndDate ||
-              fullUser.seekerSubscriptionEndDate !== parsedUser.seekerSubscriptionEndDate
-            ) {
-              setDoc(doc(db, 'users', fullUser.id), fullUser, { merge: true }).catch(e => console.warn('[auth] Offline:', e));
-            }
-
-            localStorage.setItem('handy-connect-user', JSON.stringify(fullUser));
-            setUser(fullUser);
-          }
-        } catch (error) {
-          console.warn('[auth] Failed to initialise user:', error);
-          localStorage.removeItem('handy-connect-user');
-        } finally {
-          setLoading(false);
-        }
       },
       (error) => {
-        console.warn('[auth] Firestore onSnapshot unreachable/offline. Using local state fallback:', error?.message);
-        // Fallback to local storage user session when Firebase is offline
-        try {
-          const storedUserStr = localStorage.getItem('handy-connect-user');
-          if (storedUserStr) {
-            setUser(JSON.parse(storedUserStr));
-          } else {
-            setUser(null);
-          }
-        } catch (e) {
-          console.warn('[auth] Failed parsing local user state:', e);
-        } finally {
-          setLoading(false);
-        }
-      }
+        console.warn('[auth] Firestore onSnapshot unreachable/offline:', error?.message);
+      },
     );
 
     return () => unsubscribe();
@@ -175,7 +187,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ─── Login ─────────────────────────────────────────────────────────────────
 
-  const login = async (identifier: string, password: string): Promise<User | null | { rateLimited: true; message: string }> => {
+  const login = async (
+    identifier: string,
+    password: string,
+  ): Promise<User | null | { rateLimited: true; message: string }> => {
     const rl = getClientRateLimiter();
 
     // Per-identifier rate limit check (combines IP fingerprint + account)
@@ -203,10 +218,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       if (data.success && data.user) {
         rl.onSuccess('auth', identifier);
-        const loggedIn = data.user as User;
-        setUser(loggedIn);
-        sessionStorage.setItem('handy-connect-user', JSON.stringify(loggedIn));
-        return loggedIn;
+        // Rehydrate user from Firestore using single source of truth
+        const fullUser = await fetchUserById(data.user.id);
+        const resolvedUser = fullUser || (data.user as User);
+        setUser(resolvedUser);
+        return resolvedUser;
       }
     } catch (err) {
       console.error('[auth] Login API call failed:', err);
@@ -225,16 +241,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateAllUsers({ ...user, lastSeen: `last seen today at ${lastSeenTime}` });
     }
     setUser(null);
-    sessionStorage.removeItem('handy-connect-user');
 
-    // Clear httpOnly session cookie via API route
-    fetch('/api/auth/logout', { method: 'POST' })
-      .catch(err => console.warn('[auth] Failed to clear session cookie:', err));
+    // Clear httpOnly session cookie and revoke session in Firestore via API route
+    fetch('/api/auth/logout', { method: 'POST' }).catch((err) =>
+      console.warn('[auth] Failed to clear session cookie:', err),
+    );
   };
 
   // ─── Signup ────────────────────────────────────────────────────────────────
 
-  const signup = async (newUser: User, password: string): Promise<User | null | { rateLimited: true; message: string }> => {
+  const signup = async (
+    newUser: User,
+    password: string,
+  ): Promise<User | null | { rateLimited: true; message: string }> => {
     const rl = getClientRateLimiter();
     const rateLimitKey = `signup:${newUser.email}`;
 
@@ -243,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { rateLimited: true, message: check.message ?? 'Too many attempts. Please try again later.' };
     }
 
-    const existingUser = users.find(u => u.email.toLowerCase() === newUser.email.toLowerCase());
+    const existingUser = users.find((u) => u.email.toLowerCase() === newUser.email.toLowerCase());
     if (existingUser) {
       // Record a "failure" to prevent email enumeration via signup
       rl.onFailure('auth', rateLimitKey);
@@ -268,9 +287,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { user: registeredUser } = await res.json();
       rl.onSuccess('auth', rateLimitKey);
-      setUser(registeredUser);
-      sessionStorage.setItem('handy-connect-user', JSON.stringify(registeredUser));
-      return registeredUser;
+      const fullUser = await fetchUserById(registeredUser.id);
+      const resolvedUser = fullUser || (registeredUser as User);
+      setUser(resolvedUser);
+      return resolvedUser;
     } catch (err) {
       console.error('[auth] Registration API call failed:', err);
       rl.onFailure('auth', rateLimitKey);
@@ -284,10 +304,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateAllUsers(updatedUser);
 
     if (user?.id === updatedUser.id) {
-      const fullUserRecord = users.find(u => u.id === updatedUser.id);
+      const fullUserRecord = users.find((u) => u.id === updatedUser.id);
       const userToSave: User = { ...fullUserRecord, ...updatedUser };
       setUser(userToSave);
-      sessionStorage.setItem('handy-connect-user', JSON.stringify(userToSave));
     }
   };
 
@@ -305,7 +324,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         amount,
         plan: 'Pro Worker',
         method,
-        status: 'paid' as const
+        status: 'paid' as const,
       };
 
       const updatedUser: User = {
@@ -313,7 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isPro: true,
         experience,
         subscriptionEndDate: subscriptionEndDate.toISOString(),
-        paymentHistory: [...(user.paymentHistory || []), historyEntry]
+        paymentHistory: [...(user.paymentHistory || []), historyEntry],
       };
       updateUser(updatedUser);
     }
@@ -330,14 +349,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         amount,
         plan: 'Pro Seeker',
         method,
-        status: 'paid' as const
+        status: 'paid' as const,
       };
 
       const updatedUser: User = {
         ...user,
         isSeekerPro: true,
         seekerSubscriptionEndDate: seekerSubscriptionEndDate.toISOString(),
-        paymentHistory: [...(user.paymentHistory || []), historyEntry]
+        paymentHistory: [...(user.paymentHistory || []), historyEntry],
       };
       updateUser(updatedUser);
     }
@@ -350,7 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const grantSubscription = (workerId: string, durationDays: number) => {
-    const worker = users.find(u => u.id === workerId && u.role === 'worker');
+    const worker = users.find((u) => u.id === workerId && u.role === 'worker');
     if (!worker) return;
 
     const subscriptionEndDate = new Date();
@@ -362,7 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       amount: 'Admin Granted',
       plan: 'Pro Worker',
       method: 'Admin Grant',
-      status: 'paid' as const
+      status: 'paid' as const,
     };
 
     const updatedWorker: UserWithPassword = {
@@ -370,14 +389,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isPro: true,
       subscriptionEndDate: subscriptionEndDate.toISOString(),
       subscriptionGrantedBy: 'admin',
-      paymentHistory: [...(worker.paymentHistory || []), historyEntry]
+      paymentHistory: [...(worker.paymentHistory || []), historyEntry],
     };
 
     updateAllUsers(updatedWorker);
   };
 
   const revokeSubscription = (workerId: string) => {
-    const worker = users.find(u => u.id === workerId && u.role === 'worker');
+    const worker = users.find((u) => u.id === workerId && u.role === 'worker');
     if (!worker) return;
 
     const updatedWorker: UserWithPassword = {
@@ -391,7 +410,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateIqamaStatus = (workerId: string, status: 'approved' | 'rejected', reason?: string) => {
-    const worker = users.find(u => u.id === workerId && u.role === 'worker');
+    const worker = users.find((u) => u.id === workerId && u.role === 'worker');
     if (!worker) return;
 
     const updatedWorker: UserWithPassword = {
@@ -463,18 +482,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const updatedUser: User = { ...user, phoneVerified: verified };
       setUser(updatedUser);
-      localStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
-      sessionStorage.setItem('handy-connect-user', JSON.stringify(updatedUser));
     }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user, loading, login, logout, signup, updateUser, subscribeUser, subscribeSeeker,
-      requestPasswordReset, resetPassword,
-      getAllUsers, grantSubscription, revokeSubscription, updateIqamaStatus, submitIqama,
-      setPhoneVerified
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        signup,
+        updateUser,
+        subscribeUser,
+        subscribeSeeker,
+        requestPasswordReset,
+        resetPassword,
+        getAllUsers,
+        grantSubscription,
+        revokeSubscription,
+        updateIqamaStatus,
+        submitIqama,
+        setPhoneVerified,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
