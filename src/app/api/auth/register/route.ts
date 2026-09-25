@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { withRateLimit } from '@/lib/server-rate-limiter';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 import { type User } from '@/lib/data';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
 
     const { password: _p, ...sanitized } = userDocData;
 
-    // 4. Mint signed 7-day JWT session token
+    // 4. Mint signed JWT session token (expires in 1 hour) with unique session jti
+    const jti = crypto.randomUUID();
     const token = await new SignJWT({
       userId: sanitized.id,
       role: sanitized.role,
@@ -68,8 +70,22 @@ export async function POST(req: NextRequest) {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
-      .setExpirationTime('7d')
+      .setJti(jti)
+      .setExpirationTime('1h')
       .sign(JWT_SECRET);
+
+    // Write session to Firestore activeSessions using Admin SDK
+    try {
+      const adminDb = getAdminFirestore();
+      await adminDb.collection('activeSessions').doc(jti).set({
+        userId: sanitized.id,
+        jti,
+        issuedAt: Date.now(),
+        expiresAt: Date.now() + 3_600_000,
+      });
+    } catch (err) {
+      console.warn('[api/auth/register] Failed to write activeSessions:', err);
+    }
 
     // 5. Build response with httpOnly cookie
     const response = NextResponse.json({
@@ -82,7 +98,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60, // 1 hour
     });
 
     return response;
