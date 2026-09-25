@@ -17,7 +17,7 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting
-  const limited = withRateLimit(req, 'auth');
+  const limited = await withRateLimit(req, 'auth');
   if (limited) return limited;
 
   try {

@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc } fro
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting (auth tier)
-  const limited = withRateLimit(req, 'auth');
+  const limited = await withRateLimit(req, 'auth');
   if (limited) return limited;
 
   try {

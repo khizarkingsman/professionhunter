@@ -47,7 +47,7 @@ const ADMIN_USER: User = {
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting
-  const limited = withRateLimit(req, 'auth');
+  const limited = await withRateLimit(req, 'auth');
   if (limited) return limited;
 
   try {
