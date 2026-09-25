@@ -34,7 +34,7 @@ export default function LoginPage() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     // ── Input validation ──────────────────────────────────────────────────
     const result = loginSchema.safeParse({identifier, password});
     if (!result.success) {
@@ -50,7 +50,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     const {identifier: validIdentifier, password: validPassword} = result.data;
-    const outcome = login(validIdentifier, validPassword);
+    const outcome = await login(validIdentifier, validPassword);
 
     setIsSubmitting(false);
 

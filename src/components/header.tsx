@@ -23,6 +23,7 @@ import {useAuth} from '@/context/auth-context';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
 import { EditSeekerProfileDialog } from './edit-seeker-profile-dialog';
 import { ModeToggle } from './mode-toggle';
+import { PhoneVerificationSidebarBox } from './phone-verification-sidebar-box';
 import { useLanguage } from '@/context/language-context';
 import { Language } from '@/lib/translations';
 
@@ -114,6 +115,7 @@ export function Header() {
                         {user.role === 'seeker' && <EditSeekerProfileDialog user={user} />}
                     </div>
                   </div>
+                  <PhoneVerificationSidebarBox />
                   <nav className="flex flex-col gap-2">
                     {getVisibleNavLinks().map(link => (
                       <Button

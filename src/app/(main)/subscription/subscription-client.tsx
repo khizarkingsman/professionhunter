@@ -34,7 +34,6 @@ import {
   ArrowUpCircle,
   ShieldCheck,
   Receipt,
-  Sparkles,
 } from 'lucide-react';
 import {SaudiCheckout} from '@/components/saudi-checkout';
 
@@ -293,7 +292,6 @@ export default function SubscriptionClient() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <Sparkles className="h-10 w-10 mx-auto mb-3 opacity-50" />
               <p className="font-medium">No payment history yet</p>
               <p className="text-sm">Subscribe to a Pro plan to see your payment records here.</p>
             </div>

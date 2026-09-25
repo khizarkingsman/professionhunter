@@ -46,7 +46,12 @@ service cloud.firestore {
           'isVerified',
           'iqamaStatus',
           'iqamaVerifiedAt',
-          'subscriptionGrantedBy'
+          'subscriptionGrantedBy',
+          'isPro',
+          'isSeekerPro',
+          'subscriptionEndDate',
+          'seekerSubscriptionEndDate',
+          'paymentHistory'
         ]))
       );
 
@@ -85,6 +90,32 @@ service cloud.firestore {
 
       // 4. Delete: Store Owner or Admin
       allow delete: if isStoreOwner() || isAdmin();
+    }
+
+    // ── Collection: chats ─────────────────────────────────────────────────
+    match /chats/{chatId} {
+      // 1. Read: User must be authenticated and listed as a participant
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants || isAdmin()
+      );
+
+      // 2. Create: User must be authenticated and included in participants array
+      allow create: if isAuthenticated() && (
+        request.auth.uid in request.resource.data.participants
+      );
+
+      // 3. Update: Participants can send messages
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants
+      );
+
+      // 4. Delete: Admin only
+      allow delete: if isAdmin();
+    }
+
+    // ── Collection: phoneOtps ─────────────────────────────────────────────
+    match /phoneOtps/{userId} {
+      allow read, write: if true;
     }
 
     // ── Default Fallback ──────────────────────────────────────────────────
