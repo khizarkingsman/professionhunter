@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { withRateLimit } from '@/lib/server-rate-limiter';
 import { db } from '@/lib/firebase';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
@@ -88,6 +89,19 @@ export async function POST(req: NextRequest) {
 
       // Clean up the used reset token
       await deleteDoc(resetDocRef);
+
+      // Revoke all active sessions for this user across devices
+      try {
+        const adminDb = getAdminFirestore();
+        const sessionsSnap = await adminDb
+          .collection('activeSessions')
+          .where('userId', '==', userId)
+          .get();
+        const deletions = sessionsSnap.docs.map((d) => d.ref.delete());
+        await Promise.all(deletions);
+      } catch (err) {
+        console.warn('[verify-password-reset] Failed to revoke active sessions:', err);
+      }
 
       return NextResponse.json({ success: true });
     }
