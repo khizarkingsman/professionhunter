@@ -7,14 +7,11 @@ import { type User } from '@/lib/data';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 
-if (!process.env.JWT_SECRET) {
-  throw new Error(
-    '[api/auth/register] JWT_SECRET environment variable is not set. ' +
-    'Set it in .env.local (dev) or your deployment environment (prod).'
-  );
+function getJwtSecret(): Uint8Array | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return new TextEncoder().encode(secret);
 }
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting
@@ -62,6 +59,15 @@ export async function POST(req: NextRequest) {
     const { password: _p, ...sanitized } = userDocData;
 
     // 4. Mint signed JWT session token (expires in 1 hour) with unique session jti
+    const jwtSecret = getJwtSecret();
+    if (!jwtSecret) {
+      console.error('[api/auth/register] JWT_SECRET environment variable is not configured.');
+      return NextResponse.json(
+        { error: 'Authentication service configuration error' },
+        { status: 500 }
+      );
+    }
+
     const jti = crypto.randomUUID();
     const token = await new SignJWT({
       userId: sanitized.id,
@@ -72,7 +78,7 @@ export async function POST(req: NextRequest) {
       .setIssuedAt()
       .setJti(jti)
       .setExpirationTime('1h')
-      .sign(JWT_SECRET);
+      .sign(jwtSecret);
 
     // Write session to Firestore activeSessions using Admin SDK
     try {

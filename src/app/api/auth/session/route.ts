@@ -8,14 +8,11 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 // Returns the decoded payload (userId, role, name). Returns 401 if revoked/invalid.
 // ───────────────────────────────────────────────────────────────────────────────
 
-if (!process.env.JWT_SECRET) {
-  throw new Error(
-    '[api/auth/session] JWT_SECRET environment variable is not set. ' +
-    'Set it in .env.local (dev) or your deployment environment (prod).'
-  );
+function getJwtSecret(): Uint8Array | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return new TextEncoder().encode(secret);
 }
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,8 +22,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
+    const jwtSecret = getJwtSecret();
+    if (!jwtSecret) {
+      console.warn('[api/auth/session] JWT_SECRET is not configured.');
+      return NextResponse.json({ user: null }, { status: 401 });
+    }
+
     // Verify and decode the JWT
-    const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET);
+    const { payload } = await jwtVerify(sessionCookie.value, jwtSecret);
 
     // If jti claim is present, check against Firestore activeSessions
     const jti = payload.jti as string | undefined;

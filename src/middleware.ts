@@ -7,15 +7,11 @@ import { jwtVerify } from 'jose';
 // Enforces role-based access control and eliminates localStorage client spoofing.
 // ─────────────────────────────────────────────────────────────────────────────
 
-if (!process.env.JWT_SECRET) {
-  throw new Error(
-    '[middleware] JWT_SECRET environment variable is not set. ' +
-    'Set it in .env.local (dev) or your deployment environment (prod). ' +
-    'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64\'))"'
-  );
+function getJwtSecret(): Uint8Array | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return new TextEncoder().encode(secret);
 }
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -34,8 +30,16 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
+    const jwtSecret = getJwtSecret();
+    if (!jwtSecret) {
+      console.warn('[middleware] JWT_SECRET environment variable is not configured.');
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
     try {
-      const { payload } = await jwtVerify(sessionCookie, JWT_SECRET);
+      const { payload } = await jwtVerify(sessionCookie, jwtSecret);
       const role = payload.role as string;
 
       // 1. Admin route requires admin role
