@@ -64,6 +64,16 @@ export default function LoginPage() {
       return;
     }
 
+    // ── Server configuration or system error ──────────────────────────────
+    if (outcome && typeof outcome === 'object' && 'error' in outcome) {
+      toast({
+        variant: 'destructive',
+        title: 'Server Error',
+        description: outcome.message,
+      });
+      return;
+    }
+
     // ── Auth response ─────────────────────────────────────────────────────
     if (outcome) {
       const loggedInUser = outcome;

@@ -221,6 +221,11 @@ export default function SignupPage() {
           return;
         }
 
+        if (outcome && typeof outcome === 'object' && 'error' in outcome) {
+          toast({variant: 'destructive', title: 'Server Error', description: outcome.message});
+          return;
+        }
+
         if (outcome) {
           toast({title: t('storePendingDesc'), description: t('storePendingDesc')});
           router.push('/dashboard-store');
@@ -266,6 +271,12 @@ export default function SignupPage() {
 
     if (outcome && typeof outcome === 'object' && 'rateLimited' in outcome) {
       toast({variant: 'destructive', title: 'Too Many Attempts', description: outcome.message});
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (outcome && typeof outcome === 'object' && 'error' in outcome) {
+      toast({variant: 'destructive', title: 'Server Error', description: outcome.message});
       setIsSubmitting(false);
       return;
     }

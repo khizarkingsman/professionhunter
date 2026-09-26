@@ -37,12 +37,14 @@ const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ?? '';
 // Types
 // ---------------------------------------------------------------------------
 
+export type AuthResult = User | null | { rateLimited: true; message: string } | { error: true; message: string };
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (identifier: string, password: string) => Promise<User | null | { rateLimited: true; message: string }>;
+  login: (identifier: string, password: string) => Promise<AuthResult>;
   logout: () => void;
-  signup: (newUser: User, password: string) => Promise<User | null | { rateLimited: true; message: string }>;
+  signup: (newUser: User, password: string) => Promise<AuthResult>;
   updateUser: (updatedUser: User) => void;
   subscribeUser: (amount: string, method: string) => void;
   subscribeSeeker: (amount: string, method: string) => void;
@@ -190,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (
     identifier: string,
     password: string,
-  ): Promise<User | null | { rateLimited: true; message: string }> => {
+  ): Promise<AuthResult> => {
     const rl = getClientRateLimiter();
 
     // Per-identifier rate limit check (combines IP fingerprint + account)
@@ -211,6 +213,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await res.json().catch(() => ({}));
           return { rateLimited: true, message: data.error ?? 'Too many attempts. Please try again later.' };
         }
+        if (res.status >= 500) {
+          const data = await res.json().catch(() => ({}));
+          return { error: true, message: data.error ?? 'Server error during authentication. Check server environment variables.' };
+        }
         rl.onFailure('auth', identifier);
         return null;
       }
@@ -226,6 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       console.error('[auth] Login API call failed:', err);
+      return { error: true, message: 'Network or server error communicating with authentication API.' };
     }
 
     // Failure — record the attempt for backoff calculation
@@ -253,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (
     newUser: User,
     password: string,
-  ): Promise<User | null | { rateLimited: true; message: string }> => {
+  ): Promise<AuthResult> => {
     const rl = getClientRateLimiter();
     const rateLimitKey = `signup:${newUser.email}`;
 
@@ -281,6 +288,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await res.json().catch(() => ({}));
           return { rateLimited: true, message: data.error ?? 'Too many attempts. Please try again later.' };
         }
+        if (res.status >= 500) {
+          const data = await res.json().catch(() => ({}));
+          return { error: true, message: data.error ?? 'Server error during registration. Check server environment variables.' };
+        }
         rl.onFailure('auth', rateLimitKey);
         return null;
       }
@@ -293,8 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return resolvedUser;
     } catch (err) {
       console.error('[auth] Registration API call failed:', err);
-      rl.onFailure('auth', rateLimitKey);
-      return null;
+      return { error: true, message: 'Network or server error communicating with registration API.' };
     }
   };
 
