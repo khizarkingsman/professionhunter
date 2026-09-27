@@ -14,23 +14,11 @@ import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firesto
 // 3. Issues signed 1-hour httpOnly session cookie with activeSessions tracking
 // ───────────────────────────────────────────────────────────────────────────────
 
-if (!process.env.JWT_SECRET) {
-  throw new Error(
-    '[api/auth/login] JWT_SECRET environment variable is not set. ' +
-    'Set it in .env.local (dev) or your deployment environment (prod).'
-  );
+function getJwtSecret(): Uint8Array | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return new TextEncoder().encode(secret);
 }
-
-if (!process.env.ADMIN_PASSWORD) {
-  throw new Error(
-    '[api/auth/login] ADMIN_PASSWORD environment variable is not set. ' +
-    'Set a strong password in .env.local (dev) or your deployment environment (prod).'
-  );
-}
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 const ADMIN_USER: User = {
   id: 'admin-001',
@@ -73,9 +61,11 @@ export async function POST(req: NextRequest) {
     let authenticatedUser: User | null = null;
 
     // Check Admin credentials server-side (secrets never reach the client bundle)
+    const adminPassword = process.env.ADMIN_PASSWORD;
     if (
       (ident === 'admin' || ident === 'admin@professionhunter.com' || ident === '+966500000000') &&
-      password === ADMIN_PASSWORD
+      adminPassword &&
+      password === adminPassword
     ) {
       authenticatedUser = ADMIN_USER;
     } else {
@@ -146,6 +136,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Mint signed JWT session token (expires in 1 hour) with unique session jti
+    const jwtSecret = getJwtSecret();
+    if (!jwtSecret) {
+      console.error('[api/auth/login] JWT_SECRET environment variable is not configured.');
+      return NextResponse.json(
+        { error: 'Authentication service configuration error' },
+        { status: 500 }
+      );
+    }
+
     const jti = crypto.randomUUID();
     const token = await new SignJWT({
       userId: authenticatedUser.id,
@@ -156,7 +155,7 @@ export async function POST(req: NextRequest) {
       .setIssuedAt()
       .setJti(jti)
       .setExpirationTime('1h')
-      .sign(JWT_SECRET);
+      .sign(jwtSecret);
 
     // Write session to Firestore activeSessions using Admin SDK
     try {

@@ -11,10 +11,11 @@ import { sendWhatsAppOtp } from '@/lib/whatsapp';
 // with a 10-minute expiry, and dispatches via WhatsApp Cloud API.
 // ─────────────────────────────────────────────────────────────────────────────
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('[send-phone-otp] JWT_SECRET not set.');
+function getJwtSecret(): Uint8Array | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return new TextEncoder().encode(secret);
 }
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function POST(req: NextRequest) {
   // 1. Rate limiting (auth tier)
@@ -27,9 +28,10 @@ export async function POST(req: NextRequest) {
 
     // 2. Identify user from session cookie if present
     const sessionCookie = req.cookies.get('session')?.value;
-    if (sessionCookie && JWT_SECRET) {
+    const jwtSecret = getJwtSecret();
+    if (sessionCookie && jwtSecret) {
       try {
-        const { payload } = await jwtVerify(sessionCookie, JWT_SECRET);
+        const { payload } = await jwtVerify(sessionCookie, jwtSecret);
         if (payload?.userId) {
           userId = String(payload.userId);
         }

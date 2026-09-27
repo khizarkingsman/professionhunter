@@ -59,6 +59,8 @@ export type User = {
   iqamaVerifiedAt?: string;
   iqamaRejectionReason?: string;
   isVerified?: boolean;
+  // Phone OTP verification via WhatsApp
+  phoneVerified?: boolean;
   // Admin-granted subscription tracking
   subscriptionGrantedBy?: string;
   // Active state for worker tracker

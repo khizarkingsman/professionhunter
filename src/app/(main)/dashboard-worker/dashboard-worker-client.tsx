@@ -7,7 +7,7 @@ import {
   professions,
 } from '@/lib/data';
 import type { User, Review, Chat } from '@/lib/data';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Card,
   CardContent,
@@ -15,29 +15,29 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
-import {Button} from '@/components/ui/button';
-import {Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone, Trash2, Info} from 'lucide-react';
-import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Star, MessageSquare, User as UserIcon, Briefcase, CalendarDays, Phone, Trash2, Info } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import EditProfileDialog from '@/components/edit-profile-dialog';
 import ReplyReviewDialog from '@/components/reply-review-dialog';
 import Link from 'next/link';
-import {useRouter} from 'next/navigation';
-import {useAuth} from '@/context/auth-context';
-import {useEffect, useState} from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
+import { useEffect, useState } from 'react';
 import SubscriptionCard from '@/components/subscription-card';
-import {useLanguage} from '@/context/language-context';
-import {WorkerTracker} from '@/components/worker-tracker';
-import {IqamaVerificationDialog} from '@/components/iqama-verification-dialog';
-import {LoadingScreen} from '@/components/loading-screen';
-import {db} from '@/lib/firebase';
-import {collection, onSnapshot} from 'firebase/firestore';
+import { useLanguage } from '@/context/language-context';
+import { WorkerTracker } from '@/components/worker-tracker';
+import { IqamaVerificationDialog } from '@/components/iqama-verification-dialog';
+import { LoadingScreen } from '@/components/loading-screen';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, QuerySnapshot, DocumentData } from 'firebase/firestore';
 
 export default function DashboardWorkerClient() {
-  const {user: worker, loading, getAllUsers} = useAuth();
+  const { user: worker, loading, getAllUsers } = useAuth();
   const router = useRouter();
-  const {t} = useLanguage();
+  const { t } = useLanguage();
 
   const allUsers = getAllUsers();
   const [allReviews, setAllReviews] = useState<Review[]>([]);
@@ -46,24 +46,26 @@ export default function DashboardWorkerClient() {
   useEffect(() => {
     const storedReviews = localStorage.getItem('handy-connect-all-reviews');
     if (storedReviews) {
-        setAllReviews(JSON.parse(storedReviews));
+      setAllReviews(JSON.parse(storedReviews));
     } else {
-        setAllReviews(mockReviews);
-        localStorage.setItem('handy-connect-all-reviews', JSON.stringify(mockReviews));
+      setAllReviews(mockReviews);
+      localStorage.setItem('handy-connect-all-reviews', JSON.stringify(mockReviews));
     }
 
     if (!worker) return;
 
     // Listen to active conversations in real-time from Firestore
-    const unsubscribe = onSnapshot(
+    const chatsQuery = query(
       collection(db, 'chats'),
-      (snapshot) => {
+      where('participants', 'array-contains', worker.id)
+    );
+
+    const unsubscribe = onSnapshot(
+      chatsQuery,
+      (snapshot: QuerySnapshot<DocumentData>) => {
         const fetchedChats: Chat[] = [];
         snapshot.forEach((docSnap) => {
-          const data = docSnap.data() as Chat;
-          if (data.participants && data.participants.includes(worker.id)) {
-            fetchedChats.push(data);
-          }
+          fetchedChats.push({ ...(docSnap.data() as Chat), id: docSnap.id });
         });
         setAllChats(fetchedChats);
       },
@@ -100,18 +102,18 @@ export default function DashboardWorkerClient() {
     setAllReviews(updatedReviews);
     localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
   };
-  
+
   const handleReplyToReview = (reviewId: string, replyText: string) => {
     const updatedReviews = allReviews.map(review => {
       if (review.id === reviewId) {
-        return {...review, reply: replyText};
+        return { ...review, reply: replyText };
       }
       return review;
     });
     setAllReviews(updatedReviews);
     localStorage.setItem('handy-connect-all-reviews', JSON.stringify(updatedReviews));
   };
-  
+
   const WhatsAppIcon = () => (
     <svg
       role="img"
@@ -229,11 +231,10 @@ export default function DashboardWorkerClient() {
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-muted-foreground/30'
-                            }`}
+                            className={`w-4 h-4 ${i < review.rating
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-muted-foreground/30'
+                              }`}
                           />
                         ))}
                       </div>
@@ -300,8 +301,8 @@ export default function DashboardWorkerClient() {
                         <p className="font-semibold">{otherUser.name}</p>
                         <p className="text-sm text-muted-foreground">{otherUser.username}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="w-3 h-3"/>
-                            <span>{otherUser.phone}</span>
+                          <Phone className="w-3 h-3" />
+                          <span>{otherUser.phone}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -311,7 +312,7 @@ export default function DashboardWorkerClient() {
                           className="h-8 w-auto px-2"
                           asChild
                         >
-                           <Link href={`/chat/${otherUser.id}`}>
+                          <Link href={`/chat/${otherUser.id}`}>
                             <MessageSquare className="h-4 w-4" />
                             <span className="ml-2 hidden sm:inline">{t('appChat')}</span>
                           </Link>
@@ -335,7 +336,7 @@ export default function DashboardWorkerClient() {
                     </div>
                   );
                 })}
-                 {workerChats.length === 0 && (
+                {workerChats.length === 0 && (
                   <p className="text-muted-foreground text-center py-8">
                     You have no active chats.
                   </p>
