@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { withRateLimit } from '@/lib/server-rate-limiter';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { users as mockUsers } from '@/lib/data';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 import { sendWhatsAppOtp } from '@/lib/whatsapp';
-
-// ─── POST /api/auth/send-phone-otp ──────────────────────────────────────────
-// Generates a 6-digit random code, stores it in Firestore (phoneOtps collection)
-// with a 10-minute expiry, and dispatches via WhatsApp Cloud API.
-// ─────────────────────────────────────────────────────────────────────────────
 
 function getJwtSecret(): Uint8Array | null {
   const secret = process.env.JWT_SECRET;
@@ -52,25 +45,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Retrieve user document to obtain registered phone number
+    const adminDb = getAdminFirestore();
+
+    // 3. Retrieve user document via Admin SDK to obtain registered phone number
     let phoneNumber: string | null = null;
 
     try {
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
+      const userDoc = await adminDb.collection('users').doc(userId).get();
+      if (userDoc.exists) {
         const u = userDoc.data();
-        phoneNumber = u.phone || null;
+        phoneNumber = u?.phone || null;
       }
     } catch (fsErr) {
-      console.warn('[send-phone-otp] Firestore read error, checking local fallback:', fsErr);
-    }
-
-    // Fallback to mock users if Firestore is not populated or offline
-    if (!phoneNumber) {
-      const mock = mockUsers.find(u => u.id === userId);
-      if (mock?.phone) {
-        phoneNumber = mock.phone;
-      }
+      console.warn('[send-phone-otp] Firestore read error via Admin SDK:', fsErr);
     }
 
     // If still no phone found, check if provided in body
@@ -89,9 +76,9 @@ export async function POST(req: NextRequest) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 5. Store OTP record in Firestore
+    // 5. Store OTP record in Firestore via Admin SDK
     try {
-      await setDoc(doc(db, 'phoneOtps', userId), {
+      await adminDb.collection('phoneOtps').doc(userId).set({
         userId,
         code,
         phone: phoneNumber,
@@ -99,7 +86,7 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
       });
     } catch (writeErr) {
-      console.error('[send-phone-otp] Failed to save OTP to Firestore:', writeErr);
+      console.error('[send-phone-otp] Failed to save OTP via Admin SDK:', writeErr);
       return NextResponse.json(
         { error: 'Failed to initiate verification record. Please try again.' },
         { status: 500 }

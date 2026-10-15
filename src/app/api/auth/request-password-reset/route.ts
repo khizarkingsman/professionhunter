@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/server-rate-limiter';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting (auth tier)
@@ -20,20 +19,18 @@ export async function POST(req: NextRequest) {
     }
 
     const ident = identifier.trim().toLowerCase();
+    const adminDb = getAdminFirestore();
+    const usersCol = adminDb.collection('users');
 
-    // 2. Look up user by email, username, or phone
-    const usersRef = collection(db, 'users');
-    let q = query(usersRef, where('email', '==', ident));
-    let snap = await getDocs(q);
+    // 2. Look up user by email, username, or phone via Admin SDK
+    let snap = await usersCol.where('email', '==', ident).limit(1).get();
 
     if (snap.empty) {
-      q = query(usersRef, where('username', '==', ident));
-      snap = await getDocs(q);
+      snap = await usersCol.where('username', '==', ident).limit(1).get();
     }
 
     if (snap.empty) {
-      q = query(usersRef, where('phone', '==', identifier.trim()));
-      snap = await getDocs(q);
+      snap = await usersCol.where('phone', '==', identifier.trim()).limit(1).get();
     }
 
     // 3. If user found: generate 6-digit code and store in Firestore with 10-minute expiry
@@ -43,7 +40,7 @@ export async function POST(req: NextRequest) {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-      await setDoc(doc(db, 'passwordResets', userDoc.id), {
+      await adminDb.collection('passwordResets').doc(userDoc.id).set({
         userId: userDoc.id,
         code,
         expiresAt,
@@ -51,7 +48,6 @@ export async function POST(req: NextRequest) {
         updatedAt: Date.now(),
       });
 
-      // Log server-side for development/audit
       console.log(`[api/auth/request-password-reset] Generated OTP for user ${userDoc.id}`);
     }
 

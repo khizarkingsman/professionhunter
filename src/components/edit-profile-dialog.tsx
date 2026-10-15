@@ -27,17 +27,9 @@ export default function EditProfileDialog({worker}: {worker: User}) {
   const {toast} = useToast();
 
   const handleSaveChanges = () => {
-    let updatedUser = {...worker, bio};
-
-    if (photo) {
-      const avatarUrl = URL.createObjectURL(photo);
-      updatedUser = {...updatedUser, avatarUrl};
-    }
-    
-    updateUser(updatedUser);
     toast({
-      title: 'Profile Updated',
-      description: 'Your profile has been successfully saved.',
+      title: 'Notice',
+      description: 'Profile editing is temporarily unavailable during maintenance. Your existing details remain visible.',
     });
   };
 

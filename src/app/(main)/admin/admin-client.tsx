@@ -110,48 +110,34 @@ export default function AdminClient() {
     return workers.filter(w => w.iqamaStatus === 'pending');
   }, [workers]);
 
-  const handleGrantSubscription = (workerId: string) => {
-    grantSubscription(workerId, parseInt(selectedDuration));
+  const handleGrantSubscription = (_workerId: string) => {
     setGrantDialogOpen(null);
     setSelectedDuration('30');
     toast({
-      title: 'Subscription Granted',
-      description: `Worker subscription activated for ${DURATION_OPTIONS.find(d => d.value === selectedDuration)?.label}.`,
+      title: 'Notice',
+      description: 'Subscription management is temporarily unavailable during maintenance. Dedicated server endpoints are arriving in Wave 2.',
     });
   };
 
-  const handleRevokeSubscription = (workerId: string) => {
-    revokeSubscription(workerId);
+  const handleRevokeSubscription = (_workerId: string) => {
     toast({
-      title: 'Subscription Revoked',
-      description: 'Worker subscription has been revoked.',
-      variant: 'destructive',
+      title: 'Notice',
+      description: 'Subscription management is temporarily unavailable during maintenance. Dedicated server endpoints are arriving in Wave 2.',
     });
   };
 
-  const handleApproveIqama = (workerId: string) => {
-    updateIqamaStatus(workerId, 'approved');
+  const handleApproveIqama = (_workerId: string) => {
     toast({
-      title: 'Iqama Approved',
-      description: 'Worker has been verified successfully.',
+      title: 'Notice',
+      description: 'Iqama verification is temporarily unavailable during maintenance. Dedicated server endpoints are arriving in Wave 2.',
     });
   };
 
-  const handleRejectIqama = (workerId: string) => {
-    if (!rejectReason.trim()) {
-      toast({
-        title: 'Reason Required',
-        description: 'Please provide a reason for rejection.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    updateIqamaStatus(workerId, 'rejected', rejectReason);
+  const handleRejectIqama = (_workerId: string) => {
     setRejectReason('');
     toast({
-      title: 'Iqama Rejected',
-      description: 'Worker verification has been rejected.',
-      variant: 'destructive',
+      title: 'Notice',
+      description: 'Iqama verification is temporarily unavailable during maintenance. Dedicated server endpoints are arriving in Wave 2.',
     });
   };
 

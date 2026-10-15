@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { withRateLimit } from '@/lib/server-rate-limiter';
-import { db } from '@/lib/firebase';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting (auth tier)
@@ -24,19 +22,18 @@ export async function POST(req: NextRequest) {
     const ident = String(identifier).trim().toLowerCase();
     const cleanCode = String(code).trim();
 
-    // 2. Look up user by email, username, or phone
-    const usersRef = collection(db, 'users');
-    let q = query(usersRef, where('email', '==', ident));
-    let snap = await getDocs(q);
+    const adminDb = getAdminFirestore();
+    const usersCol = adminDb.collection('users');
+
+    // 2. Look up user by email, username, or phone via Admin SDK
+    let snap = await usersCol.where('email', '==', ident).limit(1).get();
 
     if (snap.empty) {
-      q = query(usersRef, where('username', '==', ident));
-      snap = await getDocs(q);
+      snap = await usersCol.where('username', '==', ident).limit(1).get();
     }
 
     if (snap.empty) {
-      q = query(usersRef, where('phone', '==', String(identifier).trim()));
-      snap = await getDocs(q);
+      snap = await usersCol.where('phone', '==', String(identifier).trim()).limit(1).get();
     }
 
     if (snap.empty) {
@@ -50,17 +47,17 @@ export async function POST(req: NextRequest) {
     const userId = userDoc.id;
 
     // 3. Look up password reset document
-    const resetDocRef = doc(db, 'passwordResets', userId);
-    const resetSnap = await getDoc(resetDocRef);
+    const resetDocRef = adminDb.collection('passwordResets').doc(userId);
+    const resetSnap = await resetDocRef.get();
 
-    if (!resetSnap.exists()) {
+    if (!resetSnap.exists) {
       return NextResponse.json(
         { error: 'Invalid or expired verification code' },
         { status: 400 }
       );
     }
 
-    const resetData = resetSnap.data();
+    const resetData = resetSnap.data() || {};
 
     // Check expiry (10 minutes) and code equality
     if (Date.now() > (resetData.expiresAt ?? 0) || resetData.code !== cleanCode) {
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. If newPassword is provided, hash with bcrypt and update user document
+    // 4. If newPassword is provided, hash with bcrypt and update credentials collection
     if (newPassword) {
       if (typeof newPassword !== 'string' || newPassword.length < 8) {
         return NextResponse.json(
@@ -81,18 +78,17 @@ export async function POST(req: NextRequest) {
 
       const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-      await setDoc(
-        doc(db, 'users', userId),
-        { password: hashedPassword },
-        { merge: true }
-      );
+      // Write to credentials/{userId} via Admin SDK
+      await adminDb.collection('credentials').doc(userId).set({
+        passwordHash: hashedPassword,
+        updatedAt: Date.now(),
+      }, { merge: true });
 
       // Clean up the used reset token
-      await deleteDoc(resetDocRef);
+      await resetDocRef.delete();
 
       // Revoke all active sessions for this user across devices
       try {
-        const adminDb = getAdminFirestore();
         const sessionsSnap = await adminDb
           .collection('activeSessions')
           .where('userId', '==', userId)

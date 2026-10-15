@@ -97,39 +97,30 @@ export default function SubscriptionClient() {
   const lastPayment = paymentHistory[0];
 
   const handleCancel = () => {
-    setCancelling(true);
-    // Simulate cancellation - remove pro status
-    const updatedUser = {...user};
-    if (isWorker) {
-      updatedUser.isPro = false;
-      updatedUser.subscriptionEndDate = undefined;
-    } else {
-      updatedUser.isSeekerPro = false;
-      updatedUser.seekerSubscriptionEndDate = undefined;
-    }
-    updateUser(updatedUser);
     setCancelling(false);
     toast({
-      title: 'Subscription Cancelled',
-      description: 'Your subscription has been cancelled. You can resubscribe anytime.',
+      title: 'Maintenance Notice',
+      description: 'Subscription management is temporarily unavailable during scheduled maintenance.',
     });
   };
 
   const handleUpgrade = () => {
-    setIsCheckoutOpen(true);
+    toast({
+      title: 'Maintenance Notice',
+      description: 'Subscription activation is temporarily unavailable during scheduled system maintenance. Please check back soon.',
+    });
   };
 
-  const onCheckoutSuccess = (method: string) => {
-    const amount = `${upgradePlan.price} SAR`;
-    if (isWorker) {
-      subscribeUser(amount, method);
-    } else {
-      subscribeSeeker(amount, method);
-    }
+  const onCheckoutSuccess = (_method: string) => {
+    // Wave 1: client writes neutralized
   };
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4 space-y-6">
+      {/* Maintenance Notice */}
+      <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-800 dark:text-amber-300">
+        Subscription activation is temporarily unavailable during scheduled system maintenance. Please check back soon.
+      </div>
       {/* Header */}
       <div className="flex items-center gap-3">
         <CreditCard className="h-8 w-8 text-primary" />

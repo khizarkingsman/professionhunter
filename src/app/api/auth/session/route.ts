@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import { ADMIN_USER } from '@/lib/admin-user';
 
 // ─── GET /api/auth/session ────────────────────────────────────────────────────
 // Reads the httpOnly session cookie, verifies the JWT signature, and checks
 // against activeSessions in Firestore (session revocation).
-// Returns the decoded payload (userId, role, name). Returns 401 if revoked/invalid.
+// For admin sessions, returns the complete server-defined ADMIN_USER.
 // ───────────────────────────────────────────────────────────────────────────────
 
 function getJwtSecret(): Uint8Array | null {
@@ -66,6 +67,13 @@ export async function GET(req: NextRequest) {
         // Fail open: log warning but permit request if Admin SDK / Firestore is temporarily unreachable
         console.warn('[api/auth/session] Could not check session revocation, failing open:', err);
       }
+    }
+
+    // If admin, return the full server-defined ADMIN_USER profile
+    if (payload.role === 'admin' && payload.userId === 'admin-001') {
+      return NextResponse.json({
+        user: ADMIN_USER,
+      });
     }
 
     return NextResponse.json({

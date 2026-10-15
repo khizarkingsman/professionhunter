@@ -9,24 +9,6 @@ import { collection, doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
 type UserWithPassword = User & { password?: string };
 
 // ---------------------------------------------------------------------------
-// Admin account definition (Client-safe: password never stored on client)
-// ---------------------------------------------------------------------------
-const ADMIN_ACCOUNT: User = {
-  id: 'admin-001',
-  name: 'Admin',
-  username: 'admin',
-  role: 'admin',
-  email: 'admin@professionhunter.com',
-  country: 'Saudi Arabia',
-  city: 'Riyadh',
-  age: 30,
-  phone: '+966500000000',
-  avatarUrl: 'https://placehold.co/100x100.png?text=A',
-  lastSeen: 'online',
-  phoneVerified: true,
-};
-
-// ---------------------------------------------------------------------------
 // EmailJS credentials from environment variables (never hardcoded)
 // ---------------------------------------------------------------------------
 const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID ?? '';
@@ -85,8 +67,8 @@ function checkSubscriptionExpiry(u: User): User {
 }
 
 async function fetchUserById(userId: string): Promise<User | null> {
-  if (userId === ADMIN_ACCOUNT.id) {
-    return ADMIN_ACCOUNT;
+  if (userId === 'admin-001') {
+    return null;
   }
 
   try {
@@ -115,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await setDoc(doc(db, 'users', updatedUser.id as string), updatedUser, { merge: true });
     } catch (error) {
-      console.error('[auth] Failed to update user in Firestore:', error);
+      console.warn('[auth] Client writes to users are disabled during maintenance:', error);
     }
   };
 
@@ -130,14 +112,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data = await res.json();
-        const sessionUserId = data?.user?.userId;
+        const sessionUser = data?.user;
+        const sessionUserId = sessionUser?.id || sessionUser?.userId;
         if (!sessionUserId) {
           setUser(null);
           return;
         }
 
+        // If admin session, rehydrate directly from server response (zero Firestore dependency)
+        if (sessionUser?.role === 'admin' || sessionUserId === 'admin-001') {
+          setUser(sessionUser as User);
+          return;
+        }
+
         const fullUser = await fetchUserById(sessionUserId);
-        setUser(fullUser);
+        setUser(fullUser || (sessionUser as User));
       } catch (err) {
         console.warn('[auth] Session rehydration failed:', err);
         setUser(null);
@@ -148,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     rehydrateSession();
 
-    // 2. Listen to Firebase users collection for admin functions and seeding
+    // 2. Listen to Firebase users collection for directory browsing (read-only)
     const unsubscribe = onSnapshot(
       collection(db, 'users'),
       (snapshot) => {
@@ -158,24 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { password: _p, ...sanitized } = data;
           fetchedUsers.push(sanitized as User);
         });
-
-        // If the collection is empty, seed it with mock users without passwords
-        if (fetchedUsers.length === 0) {
-          const seedUsers = [...mockUsers, ADMIN_ACCOUNT];
-          seedUsers.forEach(async (u) => {
-            try {
-              await setDoc(doc(db, 'users', u.id), u);
-            } catch (e) {
-              console.warn('[auth] Could not seed user offline:', e);
-            }
-          });
-          fetchedUsers = seedUsers;
-        } else {
-          // Ensure admin account exists in list
-          if (!fetchedUsers.some((u) => u.id === ADMIN_ACCOUNT.id)) {
-            fetchedUsers.push(ADMIN_ACCOUNT);
-          }
-        }
 
         setUsers(fetchedUsers);
       },
@@ -224,7 +195,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       if (data.success && data.user) {
         rl.onSuccess('auth', identifier);
-        // Rehydrate user from Firestore using single source of truth
+        // Admin user is completely hydrated from server response (zero Firestore dependency)
+        if (data.user.id === 'admin-001' || data.user.role === 'admin') {
+          setUser(data.user as User);
+          return data.user as User;
+        }
         const fullUser = await fetchUserById(data.user.id);
         const resolvedUser = fullUser || (data.user as User);
         setUser(resolvedUser);
@@ -337,134 +312,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ─── Subscriptions ─────────────────────────────────────────────────────────
+  // ─── Subscriptions (Wave 1: Client writes eliminated in favor of UI notices) ───
 
-  const subscribeUser = (amount: string, method: string) => {
-    if (user && user.role === 'worker') {
-      const experience = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
-      const subscriptionEndDate = new Date();
-      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
-
-      const historyEntry = {
-        id: `pay-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-        amount,
-        plan: 'Pro Worker',
-        method,
-        status: 'paid' as const,
-      };
-
-      const updatedUser: User = {
-        ...user,
-        isPro: true,
-        experience,
-        subscriptionEndDate: subscriptionEndDate.toISOString(),
-        paymentHistory: [...(user.paymentHistory || []), historyEntry],
-      };
-      updateUser(updatedUser);
-    }
+  const subscribeUser = (_amount: string, _method: string) => {
+    console.warn('[auth] Subscription purchases are temporarily disabled during maintenance.');
   };
 
-  const subscribeSeeker = (amount: string, method: string) => {
-    if (user && user.role === 'seeker') {
-      const seekerSubscriptionEndDate = new Date();
-      seekerSubscriptionEndDate.setDate(seekerSubscriptionEndDate.getDate() + 15);
-
-      const historyEntry = {
-        id: `pay-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-        amount,
-        plan: 'Pro Seeker',
-        method,
-        status: 'paid' as const,
-      };
-
-      const updatedUser: User = {
-        ...user,
-        isSeekerPro: true,
-        seekerSubscriptionEndDate: seekerSubscriptionEndDate.toISOString(),
-        paymentHistory: [...(user.paymentHistory || []), historyEntry],
-      };
-      updateUser(updatedUser);
-    }
+  const subscribeSeeker = (_amount: string, _method: string) => {
+    console.warn('[auth] Subscription purchases are temporarily disabled during maintenance.');
   };
 
-  // ─── Admin Functions ───────────────────────────────────────────────────────
+  // ─── Admin Functions (Wave 1: Client writes eliminated in favor of UI notices) ───
 
   const getAllUsers = (): User[] => {
     return users;
   };
 
-  const grantSubscription = (workerId: string, durationDays: number) => {
-    const worker = users.find((u) => u.id === workerId && u.role === 'worker');
-    if (!worker) return;
-
-    const subscriptionEndDate = new Date();
-    subscriptionEndDate.setDate(subscriptionEndDate.getDate() + durationDays);
-
-    const historyEntry = {
-      id: `pay-${Date.now()}`,
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-      amount: 'Admin Granted',
-      plan: 'Pro Worker',
-      method: 'Admin Grant',
-      status: 'paid' as const,
-    };
-
-    const updatedWorker: UserWithPassword = {
-      ...worker,
-      isPro: true,
-      subscriptionEndDate: subscriptionEndDate.toISOString(),
-      subscriptionGrantedBy: 'admin',
-      paymentHistory: [...(worker.paymentHistory || []), historyEntry],
-    };
-
-    updateAllUsers(updatedWorker);
+  const grantSubscription = (_workerId: string, _durationDays: number) => {
+    console.warn('[auth] Subscription grants are temporarily disabled during maintenance.');
   };
 
-  const revokeSubscription = (workerId: string) => {
-    const worker = users.find((u) => u.id === workerId && u.role === 'worker');
-    if (!worker) return;
-
-    const updatedWorker: UserWithPassword = {
-      ...worker,
-      isPro: false,
-      subscriptionEndDate: undefined,
-      subscriptionGrantedBy: undefined,
-    };
-
-    updateAllUsers(updatedWorker);
+  const revokeSubscription = (_workerId: string) => {
+    console.warn('[auth] Subscription revocations are temporarily disabled during maintenance.');
   };
 
-  const updateIqamaStatus = (workerId: string, status: 'approved' | 'rejected', reason?: string) => {
-    const worker = users.find((u) => u.id === workerId && u.role === 'worker');
-    if (!worker) return;
-
-    const updatedWorker: UserWithPassword = {
-      ...worker,
-      iqamaStatus: status,
-      iqamaVerifiedAt: new Date().toISOString(),
-      isVerified: status === 'approved',
-      iqamaRejectionReason: status === 'rejected' ? reason : undefined,
-    };
-
-    updateAllUsers(updatedWorker);
+  const updateIqamaStatus = (_workerId: string, _status: 'approved' | 'rejected', _reason?: string) => {
+    console.warn('[auth] Iqama updates are temporarily disabled during maintenance.');
   };
 
-  const submitIqama = (iqamaNumber: string, iqamaImageUrl: string, iqamaBackImageUrl: string) => {
-    if (!user || user.role !== 'worker') return;
-
-    const updatedUser: User = {
-      ...user,
-      iqamaNumber,
-      iqamaImageUrl,
-      iqamaBackImageUrl,
-      iqamaStatus: 'pending',
-      iqamaSubmittedAt: new Date().toISOString(),
-      iqamaRejectionReason: undefined,
-    };
-
-    updateUser(updatedUser);
+  const submitIqama = (_iqamaNumber: string, _iqamaImageUrl: string, _iqamaBackImageUrl: string) => {
+    console.warn('[auth] Iqama submissions are temporarily disabled during maintenance.');
   };
 
   // ─── Password reset ─────────────────────────────────────────────────────────

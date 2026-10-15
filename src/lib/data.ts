@@ -65,6 +65,7 @@ export type User = {
   subscriptionGrantedBy?: string;
   // Active state for worker tracker
   availabilityStatus?: 'active' | 'inactive';
+  createdAt?: string;
 };
 
 export type Review = {

@@ -180,67 +180,13 @@ export default function SignupPage() {
 
     const fullPhoneNumber = `${formData.countryCode}${formData.phone}`;
 
-    // ── Store Owner Flow ───────────────────────────────────────────────────
+    // ── Store Owner Flow (Wave 1: Maintenance Notice) ──────────────────────
     if (userType === 'store') {
-      try {
-        const newUserId = `store-${Date.now()}`;
-        const docRef = await addDoc(collection(db, 'stores'), {
-          ownerId: newUserId,
-          storeName: formData.storeName,
-          storeAddress: formData.storeAddress,
-          storeCategory: formData.storeCategory,
-          phone: fullPhoneNumber,
-          email: formData.email,
-          city: formData.city,
-          neighborhood: formData.neighborhood,
-          country: 'Saudi Arabia',
-          status: 'pending',
-          createdAt: serverTimestamp(),
-        });
-
-        // Also create a local user so they can log in
-        const storeUser: Partial<User> = {
-          id: newUserId,
-          name: formData.storeName,
-          username: formData.email.split('@')[0],
-          email: formData.email,
-          phone: fullPhoneNumber,
-          country: 'Saudi Arabia',
-          city: formData.city,
-          neighborhood: formData.neighborhood,
-          role: 'store' as const,
-          avatarUrl: `https://picsum.photos/seed/${Date.now()}/400/400`,
-          storeDocId: docRef.id,
-          phoneVerified: false,
-        };
-
-        const outcome = await signup(storeUser as User, formData.password);
-
-        if (outcome && typeof outcome === 'object' && 'rateLimited' in outcome) {
-          toast({variant: 'destructive', title: 'Too Many Attempts', description: outcome.message});
-          return;
-        }
-
-        if (outcome && typeof outcome === 'object' && 'error' in outcome) {
-          toast({variant: 'destructive', title: 'Server Error', description: outcome.message});
-          return;
-        }
-
-        if (outcome) {
-          toast({title: t('storePendingDesc'), description: t('storePendingDesc')});
-          router.push('/dashboard-store');
-        }
-      } catch (error) {
-        // Log internally; show only a generic message to the user
-        console.error('[signup] Store Firestore write failed:', error);
-        toast({
-          variant: 'destructive',
-          title: t('error'),
-          description: t('storeUpdateError'),
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
+      toast({
+        title: 'Notice',
+        description: 'Store account registration is undergoing maintenance. Please check back soon.',
+      });
+      setIsSubmitting(false);
       return;
     }
 
@@ -332,6 +278,9 @@ export default function SignupPage() {
             {/* === STORE OWNER FIELDS === */}
             {userType === 'store' && (
               <>
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-800 dark:text-amber-300">
+                  Store account registration is undergoing maintenance. Please check back soon.
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="storeName">{t('storeName')}</Label>
                   <Input

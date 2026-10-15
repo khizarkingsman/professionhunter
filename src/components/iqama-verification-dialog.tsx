@@ -100,40 +100,11 @@ export function IqamaVerificationDialog() {
   };
 
   const handleSubmit = () => {
-    // ── Validate Iqama number format (exactly 10 digits) ─────────────────
-    const iqamaResult = iqamaSchema.safeParse({ iqamaNumber: iqamaNumber.trim() });
-    if (!iqamaResult.success) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Iqama Number',
-        description: iqamaResult.error.flatten().fieldErrors.iqamaNumber?.[0] ?? 'Please enter a valid 10-digit Iqama number.',
-      });
-      return;
-    }
-
-    if (!iqamaImage || !iqamaBackImage) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Document',
-        description: 'Please upload both front and back photos of your Iqama.',
-      });
-      return;
-    }
-
-    setSubmitting(true);
-    submitIqama(iqamaNumber, iqamaImage, iqamaBackImage);
-    setSubmitting(false);
-    setIsOpen(false);
-    setIqamaNumber('');
-    setIqamaImage(null);
-    setIqamaBackImage(null);
-    setFileName('');
-    setBackFileName('');
-
     toast({
-      title: 'Iqama Submitted',
-      description: 'Your Iqama has been submitted for verification. The admin will review it shortly.',
+      title: 'Notice',
+      description: 'Iqama document actions are temporarily unavailable during maintenance. Server endpoints are arriving in Wave 2.',
     });
+    setIsOpen(false);
   };
 
   // If not subscribed, handle the expired verification state or show a prompt to subscribe first

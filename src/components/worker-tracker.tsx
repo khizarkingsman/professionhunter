@@ -110,7 +110,13 @@ export function WorkerTracker() {
 
         if (!activeState) setIsSubmitting(false); // Stop loading if it was a status change
       } catch (e) {
-        console.error('Error updating location:', e);
+        console.warn('[worker-tracker] Location write unavailable during maintenance:', e);
+        if (watcherRef.current !== null) {
+          navigator.geolocation.clearWatch(watcherRef.current);
+          watcherRef.current = null;
+        }
+        setIsGpsRunning(false);
+        setLocationError('Live location broadcasting is temporarily unavailable during maintenance.');
         if (!activeState) setIsSubmitting(false);
       }
   };

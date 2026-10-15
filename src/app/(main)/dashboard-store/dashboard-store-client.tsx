@@ -106,8 +106,9 @@ export default function DashboardStoreClient() {
       setEditing(false);
       toast({title: 'Saved!', description: 'Your store details have been updated.'});
     } catch (error) {
-      console.error('Error updating store:', error);
-      toast({variant: 'destructive', title: 'Error', description: 'Could not update your store.'});
+      console.warn('[dashboard-store] Store updates unavailable during maintenance:', error);
+      toast({title: 'Notice', description: 'Store profile updates are temporarily unavailable during maintenance.'});
+      setEditing(false);
     } finally {
       setSaving(false);
     }

@@ -4,35 +4,13 @@ import { withRateLimit } from '@/lib/server-rate-limiter';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import bcrypt from 'bcryptjs';
 import { type User } from '@/lib/data';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
-
-// ─── POST /api/auth/login ─────────────────────────────────────────────────────
-// Secure authentication endpoint:
-// 1. Enforces server-side rate limiting ('auth' tier: 5 attempts per window)
-// 2. Validates credentials server-side (Admin env secret or bcrypt-hashed Firestore user)
-// 3. Issues signed 1-hour httpOnly session cookie with activeSessions tracking
-// ───────────────────────────────────────────────────────────────────────────────
+import { ADMIN_USER } from '@/lib/admin-user';
 
 function getJwtSecret(): Uint8Array | null {
   const secret = process.env.JWT_SECRET;
   if (!secret) return null;
   return new TextEncoder().encode(secret);
 }
-
-const ADMIN_USER: User = {
-  id: 'admin-001',
-  name: 'Admin',
-  username: 'admin',
-  role: 'admin',
-  email: 'admin@professionhunter.com',
-  country: 'Saudi Arabia',
-  city: 'Riyadh',
-  age: 30,
-  phone: '+966500000000',
-  avatarUrl: 'https://placehold.co/100x100.png?text=A',
-  lastSeen: 'online',
-};
 
 export async function POST(req: NextRequest) {
   // 1. Server-side rate limiting
@@ -69,23 +47,22 @@ export async function POST(req: NextRequest) {
     ) {
       authenticatedUser = ADMIN_USER;
     } else {
-      // Check Firestore database
+      // Check database via Admin SDK
       try {
-        const usersRef = collection(db, 'users');
+        const adminDb = getAdminFirestore();
+        const usersCol = adminDb.collection('users');
+
         // Check by email
-        let q = query(usersRef, where('email', '==', ident));
-        let snap = await getDocs(q);
+        let snap = await usersCol.where('email', '==', ident).limit(1).get();
 
         // Check by username if not found by email
         if (snap.empty) {
-          q = query(usersRef, where('username', '==', ident));
-          snap = await getDocs(q);
+          snap = await usersCol.where('username', '==', ident).limit(1).get();
         }
 
         // Check by phone
         if (snap.empty) {
-          q = query(usersRef, where('phone', '==', identifier.trim()));
-          snap = await getDocs(q);
+          snap = await usersCol.where('phone', '==', identifier.trim()).limit(1).get();
         }
 
         if (!snap.empty) {
@@ -106,37 +83,17 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          // Detect whether the stored value is already a bcrypt hash
-          const BCRYPT_HASH_RE = /^\$2[aby]\$/;
-          const storedPassword: string = userData.password ?? '';
-
-          let passwordMatch = false;
-
-          if (BCRYPT_HASH_RE.test(storedPassword)) {
-            // New path: compare against bcrypt hash
-            passwordMatch = await bcrypt.compare(password, storedPassword);
-          } else {
-            // Legacy path: stored password is plaintext — direct === comparison
-            if (storedPassword !== '' && storedPassword === password) {
-              passwordMatch = true;
-              // Immediately rehash and update Firestore so next login uses bcrypt
-              try {
-                const newHash = await bcrypt.hash(password, 12);
-                await setDoc(
-                  doc(db, 'users', userDoc.id),
-                  { password: newHash },
-                  { merge: true }
-                );
-              } catch (rehashErr) {
-                // Non-fatal: log but don't block authentication
-                console.warn('[api/auth/login] Inline rehash failed:', rehashErr);
+          // Fetch password hash directly from credentials collection via Admin SDK
+          const credDoc = await adminDb.collection('credentials').doc(userDoc.id).get();
+          if (credDoc.exists) {
+            const passwordHash = credDoc.data()?.passwordHash;
+            if (passwordHash && typeof passwordHash === 'string') {
+              const passwordMatch = await bcrypt.compare(password, passwordHash);
+              if (passwordMatch) {
+                const { password: _p, ...sanitized } = userData;
+                authenticatedUser = sanitized as User;
               }
             }
-          }
-
-          if (passwordMatch) {
-            const { password: _p, ...sanitized } = userData;
-            authenticatedUser = sanitized as User;
           }
         }
       } catch (dbError) {

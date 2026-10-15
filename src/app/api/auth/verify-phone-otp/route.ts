@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { withRateLimit } from '@/lib/server-rate-limiter';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 
 // ─── POST /api/auth/verify-phone-otp ────────────────────────────────────────
-// Validates 6-digit WhatsApp OTP against Firestore, sets phoneVerified: true,
+// Validates 6-digit WhatsApp OTP against Firestore via Admin SDK, sets phoneVerified: true,
 // and deletes the stored OTP record upon successful verification.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -57,20 +56,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Retrieve stored OTP document from Firestore
-    const otpDocRef = doc(db, 'phoneOtps', userId);
+    const adminDb = getAdminFirestore();
+    const otpDocRef = adminDb.collection('phoneOtps').doc(userId);
+
+    // 3. Retrieve stored OTP document from Firestore via Admin SDK
     let otpSnap;
     try {
-      otpSnap = await getDoc(otpDocRef);
+      otpSnap = await otpDocRef.get();
     } catch (fsErr) {
-      console.error('[verify-phone-otp] Failed to fetch OTP document:', fsErr);
+      console.error('[verify-phone-otp] Failed to fetch OTP document via Admin SDK:', fsErr);
       return NextResponse.json(
         { error: 'Failed to access verification system. Please try again.' },
         { status: 500 }
       );
     }
 
-    if (!otpSnap.exists()) {
+    if (!otpSnap.exists) {
       return NextResponse.json(
         { error: 'No pending verification code found. Please request a new code.' },
         { status: 400 }
@@ -80,10 +81,10 @@ export async function POST(req: NextRequest) {
     const otpData = otpSnap.data();
 
     // 4. Check expiration (10-minute expiry)
-    const expiresAtMs = new Date(otpData.expiresAt).getTime();
+    const expiresAtMs = new Date(otpData?.expiresAt).getTime();
     if (Date.now() > expiresAtMs) {
       // Clean up expired record
-      await deleteDoc(otpDocRef).catch(e => console.warn('[verify-phone-otp] Error deleting expired OTP:', e));
+      await otpDocRef.delete().catch(e => console.warn('[verify-phone-otp] Error deleting expired OTP:', e));
       return NextResponse.json(
         { error: 'Verification code has expired. Please request a new code.' },
         { status: 400 }
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Check code matching
-    if (String(otpData.code).trim() !== code) {
+    if (String(otpData?.code).trim() !== code) {
       return NextResponse.json(
         { error: 'Invalid verification code. Please check and try again.' },
         { status: 400 }
@@ -99,11 +100,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Verification successful:
-    // Update user document in Firestore: phoneVerified = true
+    // Update user document in Firestore via Admin SDK: phoneVerified = true
     try {
-      await setDoc(doc(db, 'users', userId), { phoneVerified: true }, { merge: true });
+      await adminDb.collection('users').doc(userId).set({ phoneVerified: true }, { merge: true });
     } catch (updateErr) {
-      console.error('[verify-phone-otp] Failed to update user status in Firestore:', updateErr);
+      console.error('[verify-phone-otp] Failed to update user status via Admin SDK:', updateErr);
       return NextResponse.json(
         { error: 'Failed to update verification status. Please try again.' },
         { status: 500 }
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     // Delete stored OTP
     try {
-      await deleteDoc(otpDocRef);
+      await otpDocRef.delete();
     } catch (delErr) {
       console.warn('[verify-phone-otp] Could not delete verified OTP record:', delErr);
     }

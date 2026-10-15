@@ -25,17 +25,9 @@ export function EditSeekerProfileDialog({user}: {user: User}) {
   const {toast} = useToast();
 
   const handleSaveChanges = () => {
-    let updatedUser = {...user};
-
-    if (photo) {
-      const avatarUrl = URL.createObjectURL(photo);
-      updatedUser = {...updatedUser, avatarUrl};
-    }
-    
-    updateUser(updatedUser);
     toast({
-      title: 'Profile Updated',
-      description: 'Your profile has been successfully saved.',
+      title: 'Notice',
+      description: 'Profile editing is temporarily unavailable during maintenance. Your existing details remain visible.',
     });
   };
 

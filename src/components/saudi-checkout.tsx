@@ -57,26 +57,11 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
   };
 
   const handlePayment = async () => {
-    // Basic validation
-    if (cardNumber.length < 16 || expiry.length < 5 || cvv.length < 3) {
-      toast({variant: 'destructive', title: 'Invalid Details', description: 'Please complete the card information.'});
-      return;
-    }
-
-    setIsProcessing(true);
-
-    // Simulate Payment Gateway Roundtrip
-    await new Promise(resolve => setTimeout(resolve, 2500));
-
-    setIsProcessing(false);
-    setIsDone(true);
-
-    // Final Success Callback
-    setTimeout(() => {
-      onSuccess(cardType === 'mada' ? 'mada card' : cardType.toUpperCase() + ' card');
-      setIsDone(false);
-      onClose();
-    }, 1500);
+    toast({
+      title: 'Maintenance Notice',
+      description: 'Subscription activation is temporarily unavailable during scheduled system maintenance. Please check back soon.',
+    });
+    onClose();
   };
 
   return (
@@ -93,6 +78,10 @@ export function SaudiCheckout({isOpen, onClose, onSuccess, planName, amount}: Sa
                   Complete your payment for <strong>{planName}</strong>
                 </DialogDescription>
               </DialogHeader>
+
+              <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-800 dark:text-amber-300">
+                Subscription activation is temporarily unavailable during scheduled system maintenance. Please check back soon.
+              </div>
 
               <div className="mt-4 p-4 bg-muted/50 rounded-lg flex justify-between items-center border border-primary/10">
                 <span className="text-sm font-medium">Total Amount</span>
