@@ -243,16 +243,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ─── Logout ────────────────────────────────────────────────────────────────
 
   const logout = () => {
-    if (user) {
-      const lastSeenTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      updateAllUsers({ ...user, lastSeen: `last seen today at ${lastSeenTime}` });
+    // 1. Best-effort update of lastSeen in Firestore for regular users (safely isolated)
+    if (user && user.role !== 'admin' && user.id !== 'admin-001') {
+      try {
+        const lastSeenTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setDoc(
+          doc(db, 'users', user.id),
+          { lastSeen: `last seen today at ${lastSeenTime}` },
+          { merge: true }
+        ).catch((err) => {
+          console.warn('[auth] Failed to update lastSeen in Firestore on logout:', err);
+        });
+      } catch (err) {
+        console.warn('[auth] Error updating lastSeen on logout:', err);
+      }
     }
+
+    // 2. Always clear local user state
     setUser(null);
 
-    // Clear httpOnly session cookie and revoke session in Firestore via API route
-    fetch('/api/auth/logout', { method: 'POST' }).catch((err) =>
-      console.warn('[auth] Failed to clear session cookie:', err),
-    );
+    // 3. Always clear httpOnly session cookie and revoke session in Firestore via API route
+    try {
+      fetch('/api/auth/logout', { method: 'POST' }).catch((err) =>
+        console.warn('[auth] Failed to clear session cookie:', err),
+      );
+    } catch (err) {
+      console.warn('[auth] Error triggering /api/auth/logout:', err);
+    }
   };
 
   // ─── Signup ────────────────────────────────────────────────────────────────
