@@ -89,7 +89,23 @@ export async function POST(req: NextRequest) {
         }
 
         if (!snap.empty) {
-          const userData = snap.docs[0].data();
+          const userDoc = snap.docs[0];
+          const userData = userDoc.data();
+
+          // Security: Admin accounts cannot be authenticated from Firestore.
+          // Reject any Firestore document attempting to claim admin privileges or id admin-001.
+          if (
+            userData.role === 'admin' ||
+            userData.id === 'admin-001' ||
+            userDoc.id === 'admin-001'
+          ) {
+            console.warn('[api/auth/login] Rejected attempt to authenticate admin from Firestore');
+            return NextResponse.json(
+              { error: 'Invalid identifier or password' },
+              { status: 401 }
+            );
+          }
+
           // Detect whether the stored value is already a bcrypt hash
           const BCRYPT_HASH_RE = /^\$2[aby]\$/;
           const storedPassword: string = userData.password ?? '';
@@ -107,7 +123,7 @@ export async function POST(req: NextRequest) {
               try {
                 const newHash = await bcrypt.hash(password, 12);
                 await setDoc(
-                  doc(db, 'users', snap.docs[0].id),
+                  doc(db, 'users', userDoc.id),
                   { password: newHash },
                   { merge: true }
                 );
@@ -129,6 +145,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (!authenticatedUser) {
+      return NextResponse.json(
+        { error: 'Invalid identifier or password' },
+        { status: 401 }
+      );
+    }
+
+    // Defense-in-depth: Ensure admin role and id can strictly only originate from ADMIN_USER
+    if (
+      (authenticatedUser.role === 'admin' || authenticatedUser.id === 'admin-001') &&
+      authenticatedUser !== ADMIN_USER
+    ) {
+      console.warn('[api/auth/login] Blocked non-ADMIN_USER claiming admin role or id');
       return NextResponse.json(
         { error: 'Invalid identifier or password' },
         { status: 401 }

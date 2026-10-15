@@ -31,6 +31,19 @@ export async function GET(req: NextRequest) {
     // Verify and decode the JWT
     const { payload } = await jwtVerify(sessionCookie.value, jwtSecret);
 
+    // Enforce that admin sessions strictly require userId === 'admin-001'
+    if (payload.role === 'admin' && payload.userId !== 'admin-001') {
+      const resp = NextResponse.json({ user: null }, { status: 401 });
+      resp.cookies.set('session', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+      });
+      return resp;
+    }
+
     // If jti claim is present, check against Firestore activeSessions
     const jti = payload.jti as string | undefined;
     if (jti) {

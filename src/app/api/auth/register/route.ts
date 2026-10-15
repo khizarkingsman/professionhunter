@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Security: Prohibit registration of accounts with admin role or admin-001 id
+    if (user.role === 'admin' || user.id === 'admin-001') {
+      return NextResponse.json(
+        { error: 'Registration of admin accounts is prohibited' },
+        { status: 403 }
+      );
+    }
+
     const email = String(user.email).trim().toLowerCase();
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('email', '==', email));

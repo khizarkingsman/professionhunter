@@ -42,8 +42,8 @@ export async function middleware(req: NextRequest) {
       const { payload } = await jwtVerify(sessionCookie, jwtSecret);
       const role = payload.role as string;
 
-      // 1. Admin route requires admin role
-      if (isAdminRoute && role !== 'admin') {
+      // 1. Admin route requires admin role and admin-001 userId
+      if (isAdminRoute && (role !== 'admin' || payload.userId !== 'admin-001')) {
         return NextResponse.redirect(new URL('/dashboard', req.url));
       }
 

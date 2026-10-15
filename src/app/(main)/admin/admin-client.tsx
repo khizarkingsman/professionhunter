@@ -82,9 +82,9 @@ export default function AdminClient() {
   const [selectedIqamaImage, setSelectedIqamaImage] = useState<{url: string, label: string} | null>(null);
   const [grantDialogOpen, setGrantDialogOpen] = useState<string | null>(null);
 
-  // Redirect non-admin users
+  // Redirect non-admin users (strictly requires role admin and id admin-001)
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
+    if (!loading && (!user || user.role !== 'admin' || user.id !== 'admin-001')) {
       router.push('/login');
     }
   }, [user, loading, router]);
@@ -155,7 +155,7 @@ export default function AdminClient() {
     });
   };
 
-  if (loading || !user || user.role !== 'admin') {
+  if (loading || !user || user.role !== 'admin' || user.id !== 'admin-001') {
     return (
       <div className="flex justify-center items-center h-screen">
         <p className="text-muted-foreground">Loading admin panel...</p>
