@@ -118,10 +118,6 @@ export async function POST(req: NextRequest) {
       phone: rawPhone,
       country: user.country ? String(user.country).trim() : 'Saudi Arabia',
       city: user.city ? String(user.city).trim() : 'Riyadh',
-      neighborhood: user.neighborhood ? String(user.neighborhood).trim() : undefined,
-      bio: user.bio ? String(user.bio).trim() : undefined,
-      profession: user.profession ? String(user.profession).trim() : undefined,
-      experience: typeof user.experience === 'number' ? user.experience : undefined,
       avatarUrl: user.avatarUrl ? String(user.avatarUrl).trim() : `https://placehold.co/100x100.png?text=${encodeURIComponent((user.name || 'U').charAt(0))}`,
       age: typeof user.age === 'number' ? user.age : 25,
       // Server-enforced defaults
@@ -134,6 +130,11 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
       lastSeen: 'online',
     };
+
+    if (user.neighborhood) userDocData.neighborhood = String(user.neighborhood).trim();
+    if (user.bio) userDocData.bio = String(user.bio).trim();
+    if (user.profession) userDocData.profession = String(user.profession).trim();
+    if (typeof user.experience === 'number') userDocData.experience = user.experience;
 
     // 2. Hash password with bcrypt cost 12
     const hashedPassword = await bcrypt.hash(password, 12);

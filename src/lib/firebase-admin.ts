@@ -31,5 +31,11 @@ function getAdminApp() {
 
 export function getAdminFirestore() {
   getAdminApp();
-  return getFirestore();
+  const db = getFirestore();
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    // Ignore if already applied
+  }
+  return db;
 }
