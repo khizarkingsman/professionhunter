@@ -18,7 +18,8 @@ function getAdminApp() {
     );
   }
 
-  const serviceAccount = JSON.parse(serviceAccountKey);
+  const cleanedKey = serviceAccountKey.trim().replace(/^\uFEFF/, '');
+  const serviceAccount = JSON.parse(cleanedKey);
   if (serviceAccount.private_key) {
     serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
   }
